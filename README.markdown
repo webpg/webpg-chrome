@@ -14,3 +14,7 @@ Keep in mind, this is beta software, it will probably have lots of bugs -- use a
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/kylehuff/webpg-chrome/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/webpg/webpg-chrome/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
