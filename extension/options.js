@@ -23,9 +23,16 @@ webpg.options = {
         document.title = _("WebPG Options");
         document.dir = (webpg.utils.isRTL() ? 'rtl' : 'ltr');
         if (webpg.utils.detectedBrowser['vendor'] == "mozilla")
+		{
             webpg.plugin = browserWindow.webpg.plugin;
+		}
         else if (webpg.utils.detectedBrowser['product'] == "chrome")
+		{
             webpg.plugin = chrome.extension.getBackgroundPage().webpg.plugin;
+		}
+		
+		// jQuery UI elements
+		webpg.jq('#tabs').tabs();
 
         webpg.jq('#step-1').ready(function() {
             doSystemCheck();
@@ -176,8 +183,6 @@ webpg.options = {
                     }
                     webpg.xoauth2.requestCode();
                 });
-
-                webpg.jq("#advanced-options-link").text(_("Advanced Options"));
 
                 webpg.jq("#gnupg-path-select").find(".webpg-options-text").
                     text(_("GnuPG home directory"));
@@ -531,10 +536,6 @@ webpg.options = {
                 })[0].value = webpg.plugin.gpgGetPreference("keyserver").value;
 
                 webpg.jq("#gnupg-keyserver-input")[0].dir = "ltr";
-
-                webpg.jq("#advanced-options-link").click(function(e) {
-                    webpg.jq("#advanced-options").toggle("slide");
-                });
             }
         }
 
