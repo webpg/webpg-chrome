@@ -46,6 +46,7 @@ webpg.inline = {
                 return false;
             }
         }
+//        console.log("inline init");
 
         if (doc.location && doc.location.pathname.substr(-4) == ".pdf")
             return false;
@@ -78,7 +79,7 @@ webpg.inline = {
         } else {
             // Otherwise, use the MutationObserver
             // create an observer instance
-            console.log("Using MutationObserver");
+//            console.log("Using MutationObserver");
             var observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.target.nodeName == "IFRAME" && mutation.target.className.indexOf("webpg-") == -1) {
@@ -262,7 +263,8 @@ webpg.inline = {
                         nodeRect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
                         nodeRect.left >= 0
                     );
-                    if (!isInViewport)
+                    if (webpg.utils.detectedBrowser['product'] != "thunderbird"
+                        && !isInViewport)
                         break;
                     
                     baseIdx = idx;
@@ -526,7 +528,12 @@ webpg.inline = {
 
         var fragment = range.extractContents();
 
-        var results_frame = webpg.inline.addResultsFrame(range.commonAncestorContainer, range);
+        if (range.commonAncestorContainer.nodeName != "#text")
+            var commonAncestorContainer = node;
+        else
+            var commonAncestorContainer = range.commonAncestorContainer;
+
+        var results_frame = webpg.inline.addResultsFrame(commonAncestorContainer, range);
 
         var originalNodeData = doc.createElement("span");
         originalNodeData.setAttribute("class", "webpg-node-odata");
