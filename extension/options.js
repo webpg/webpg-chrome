@@ -211,6 +211,9 @@ webpg.options = {
                 webpg.jq('#enable-encrypt-to-self-check')[0].checked = 
                     (webpg.preferences.encrypt_to_self.get());
 
+                if (webpg.preferences.default_key.get() == "")
+                    webpg.jq('#enable-encrypt-to-self-check')[0].disabled = true;
+
                 webpg.jq('#enable-gmail-integration-check')[0].checked = 
                     (webpg.preferences.gmail_integration.get() == 'true');
 
@@ -355,7 +358,10 @@ webpg.options = {
                 });
 
                 webpg.jq('#enable-encrypt-to-self-check').button({
-                    'label': (webpg.preferences.encrypt_to_self.get()) ? _('Enabled') : _('Disabled')
+                    'label': (webpg.preferences.default_key.get() == "") ?
+                             _("No default key set") :
+                                 (webpg.preferences.encrypt_to_self.get()) ?
+                                 _('Enabled') : _('Disabled')
                     }).click(function(e) {
                         if (webpg.preferences.encrypt_to_self.get()) {
                             webpg.preferences.encrypt_to_self.set(false)
