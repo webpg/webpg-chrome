@@ -61,7 +61,7 @@ webpg.keymanager = {
 
         webpg.jq('#tab-2-btn').text(_("Private Keys"));
         webpg.jq('#tab-3-btn').text(_("Public Keys"));
-        webpg.jq('#tab-4-btn').text(_("Import"));
+        webpg.jq('#tab-4-btn').text(_("Search Keyserver"));
         webpg.jq('#pubkey-search-lbl').text(_("Search/Filter") + ": ");
         webpg.jq('#keyserver-search-lbl').text(_("Search for Keys on Keyserver") + ": ");
         webpg.jq("label[for=uid_0_name]", "#genkey-form").text(_("Your Name") + ":");
@@ -282,44 +282,76 @@ webpg.keymanager = {
                     console.log(sres);
                     var keyd = webpg.jq(webpg.jq("<div>", {'class': 'signature-box2'}));
                     for (var xkey in sres) {
-                        extraclass = (sres[xkey].expired || sres[xkey].invalid || sres[xkey].revoked) ? ' invalid-key' : '';
-                        keyd.append(
-                            webpg.jq("<span>", {
-                                'class': 'signature-box' + extraclass,
-                                'css': {
-                                    'display': 'block',
-                                    'padding-right': '34px',
-                                }
-                            }).append(
-                                webpg.jq("<span>", {
-                                    'class': 'keydetails',
-                                    'html': "<a style='color:#000;'>" + sres[xkey].name + "</a>",
-                                    'css': {
-                                        'color':'#000',
-                                        'font-size': '150%',
-                                        'width': '100%',
-                                        'left': '0',
-                                    },
-                                }),
-                                webpg.jq("<span>", {
-                                    'class': 'uid-options uid-options-line',
-                                    'text': "EMAIL: " + sres[xkey].email,
-                                })
-                            ).append(
-                                webpg.jq("<span>", {
-                                    'class': 'dh',
-                                    'html': (!key == "UNDEFINED") ? "<a>" + "IMPORT" + "</a>" : "",
-                                    'css': {
-                                        'color':'#000',
-                                        'font-size': '150%',
-                                        'width': '100%',
-                                        'left': '0',
-                                    },
-                                })
-                            )
-                        )
+                      if (!xkey)
+                        continue;
+
+                      // Check if this key is already in our keyring, skip if it is
+                      if (!webpg.jq.isEmptyObject(webpg.utils.keylistTextSearch(xkey, webpg.keymanager.pubkeylist)))
+                        continue;
+
+                      extraclass = (sres[xkey].expired || sres[xkey].invalid || sres[xkey].revoked) ? ' invalid-key' : '';
+
+                      if (sres[xkey].name.length < 1)
+                        sres[xkey].name = sres[xkey].email;
+
+                      keyd.append(
+                          webpg.jq("<span>", {
+                              'class': 'signature-box' + extraclass,
+                              'css': {
+                                  'display': 'block',
+                                  'padding-right': '34px',
+                              }
+                          }).append(
+                              webpg.jq("<span>", {
+                                  'class': 'keydetails',
+                                  'html': "<a style='color:#000;'>" + sres[xkey].name + "</a>",
+                                  'css': {
+                                      'color':'#000',
+                                      'font-size': '150%',
+                                      'width': '100%',
+                                      'left': '0',
+                                  },
+                              }),
+                              webpg.jq("<span>", {
+                                  'class': 'uid-options uid-options-line',
+                                  'html': (xkey != "UNDEFINED") ? _("KeyID") + ": 0x" + xkey : "",
+                              }),
+                              webpg.jq("<span>", {
+                                'class': 'uid-options uid-options-line',
+                                'html': function() {
+                                    var uidlist = _("UIDs") + "<ul>";
+                                    for (uid in sres[xkey].uids) {
+                                        uidlist += "<li>";
+                                        if (sres[xkey].uids[uid].uid.length > 1)
+                                            uidlist += sres[xkey].uids[uid].uid + " - ";
+                                        if (sres[xkey].uids[uid].email.length > 1)
+                                            uidlist += sres[xkey].uids[uid].email;
+                                        uidlist += "</li>";
+                                    }
+                                    uidlist += "</ul>";
+                                    return uidlist;
+                                },
+                              })
+                          ).append(
+                              webpg.jq("<span>", {
+                                  'class': 'link_class',
+                                  'html': (xkey != "UNDEFINED") ? "<hr><a class='import-link' id='import-" + xkey + "' href='#'>" + _("IMPORT") + "</a>" : "",
+                                  'css': {
+                                      'color':'#000',
+                                      'font-size': '150%',
+                                      'text-transform': 'uppercase',
+                                      'width': '100%',
+                                      'left': '0',
+                                  },
+                              })
+                          )
+                      );
                     }
                     webpg.jq("#import-body").html(keyd);
+                    webpg.jq("#import-body .import-link").click(function(e){
+                      webpg.plugin.gpgImportExternalKey(this.id.split("-")[1]);
+                      webpg.jq(this).parent().parent().remove();
+                    }).css({ 'color': '#000'});
                     webpg.jq("#dialog-modal:ui-dialog").dialog('destroy');
             });
         })
@@ -748,8 +780,87 @@ webpg.keymanager = {
             document.getElementById('private_keylist').appendChild(genkey_div);
             // End key generation dialog
             webpg.keymanager.private_built = true;
+        } else {  // End key-generate button and dialog
+            var import_button = document.createElement('input');
+            import_button.setAttribute('value', _('Import from file'));
+            import_button.setAttribute('type', 'button');
+            import_button.setAttribute('id', 'import-key-btn');
+            webpg.jq(import_button).button().click(function(e){
+              webpg.jq("#importkey-dialog").dialog({
+                  'resizable': true,
+                  'height': 230,
+                  'width': 550,
+                  'modal': true,
+                  'buttons': [{
+                      'text': _("Import"),
+                      'click': function() {
+                          //console.log(params, webpg.jq(this).find("#importkey_name")[0].value);
+                          var f = webpg.jq(this).find("#importkey_name")[0].files.item(0);
+                          var reader = new FileReader();
+                          var attempt = 0;
+                          reader.onload = (function(theFile) {
+                              return function(e) {
+                                  if (e.target.error) {
+                                      webpg.jq("#import-list").html("<ul><li><strong><span class='error-text' style='padding-right:12px;'>" + 
+                                          _("Error") + ":</span>" + 
+                                          _("There was an error parsing this PGP file") + 
+                                          "</strong></li></ul>"
+                                      );
+                                      return false;
+                                  }
+                                  var result = {'error': true};
+                                  result = webpg.plugin.gpgImportKey(e.target.result);
+                                  if (result.considered < 1) {
+                                      console.log(result);
+                                      msg = ["<ul><li><strong><span class='error-text' style='padding-right:12px;'>", 
+                                          _("Error"), ":</span>", _("There was an error importing any keys in this file"),
+                                          "</strong></li>"];
+                                      msg.push("</ul>");
+                                      webpg.jq("#import-list").html(msg.join(''));
+                                  } else {
+                                      webpg.jq("#importkey_name")[0].value = '';
+                                      //webpg.jq("#importkey-dialog").dialog("destroy");
+                                      //webpg.keymanager.buildKeylistProxy(null, "public", null, null, null);
+                                  }
+                              }
+                          })(f);
+                          reader.readAsBinaryString(f);
+                      },
+                      'id': 'importkey_button',
+                  }, {
+                      'text': _("Cancel"),
+                      'click': function() {
+                          webpg.jq(this).find("#importkey_name")[0].value = "";
+                          webpg.jq("#importkey-dialog").dialog("destroy");
+                      }
+                  }
+              ]}).parent().animate({"opacity": 1.0}, 1, function() {
+                      webpg.jq("#importkey_button").attr("disabled", true);
+                      webpg.jq(this).find("#import-list").html("<ul><li><strong>" + 
+                          _("Please use the button above to open a key file (.asc/.txt)") + 
+                          "</strong></li></ul>"
+                      );
+                      webpg.jq(this).find("#importkey_name")[0].addEventListener('change', function(e) {
+                          var files = e.target.files; // FileList object
+
+                          // files is a FileList of File objects. List some properties.
+                          var f = files[0];
+                          if (files.length == 1) {
+                              console.log(f.type);
+                              if (f.type != "application/pgp-encrypted") {
+                                  e.target.value = "";
+                                  msg = ['<li class="error-text"><strong>', _("Only Text Files are supported"), '</li>'];
+                              } else {
+                                  msg = ['<li>', (f.type || 'n/a'), ' - ', f.size, ' bytes</li>'];
+                                  webpg.jq("#importkey_button").attr("disabled", false);
+                              }
+                          }
+                          webpg.jq(this).parent().find('#import-list').html('<ul>' + msg.join('') + '</ul>');
+                      }, false);
+                  });
+            });
+            webpg.jq("#tabs-3 .pubkey-search").prepend(import_button);
         }
-        // End key-generate button and dialog
 
         var prev_key = null;
         var current_keylist = (type == 'public')? keylist : pkeylist;
@@ -1438,7 +1549,7 @@ webpg.keymanager = {
                                 webpg.jq("#keyexp-never")[0].checked = true;
                                 webpg.jq("#keyexp-date-input").hide();
                                 webpg.jq("#keyexp-dialog").dialog({ 'height': 190 });
-                                webpg.jq("#keyexp-dialog").dialog("refresh");
+//                                webpg.jq("#keyexp-dialog").dialog("refresh");
                             } else {
                                 webpg.jq("#keyexp-ondate")[0].checked = true;
                                 webpg.jq("#keyexp-date-input").show();
@@ -1449,12 +1560,12 @@ webpg.keymanager = {
                             webpg.jq("#keyexp-ondate").change(function(){
                                 webpg.jq("#keyexp-date-input").show();
                                 webpg.jq("#keyexp-dialog").dialog({ 'height': 410 });
-                                webpg.jq("#keyexp-dialog").dialog("refresh");
+//                                webpg.jq("#keyexp-dialog").dialog("refresh");
                             })
                             webpg.jq("#keyexp-never").change(function(){
                                 webpg.jq("#keyexp-date-input").hide();
                                 webpg.jq("#keyexp-dialog").dialog({ 'height': 190 });
-                                webpg.jq("#keyexp-dialog").dialog("refresh");
+//                                webpg.jq("#keyexp-dialog").dialog("refresh");
                             })
 
                         },
@@ -1839,7 +1950,8 @@ webpg.keymanager = {
                     webpg.jq("#export-dialog-copytext").html(scrub(export_result));
                     webpg.jq("#export-dialog").dialog({
                         'resizable': true,
-                        'height': 230,
+                        'height': 'auto',
+                        'maxHeight': window.innerHeight - 75 || document.documentElement.clientHeight - 75,
                         'width': 536,
                         'modal': true,
                         'buttons': [
@@ -1985,6 +2097,7 @@ webpg.keymanager = {
                     params[1] = "private";
                 webpg.keymanager.buildKeylistProxy(null, params[1], params[2], null, null);
             }
+            return false;
         }).parent().find('.ui-dialog-buttonpane').
             find(".ui-button-text").each(function(iter, src) {
                 webpg.jq(src).text(webpg.jq(src).parent()[0].getAttribute("text"))
@@ -1993,6 +2106,7 @@ webpg.keymanager = {
         webpg.jq('.uid-option-button').button();
         webpg.jq('#' + type + '_keylist').off('click', '.uid-option-button');
         webpg.jq('#' + type + '_keylist').on('click', '.uid-option-button', function(e){
+            e.preventDefault();
             var params = this.id.split('-');
             var refresh = false;
             switch(params[0]) {
@@ -2091,6 +2205,7 @@ webpg.keymanager = {
         webpg.jq('.uid-option-button-sign').button();
         webpg.jq('#' + type + '_keylist').off('click', '.uid-option-button-sign');
         webpg.jq('#' + type + '_keylist').on('click', '.uid-option-button-sign', function(e){
+            e.preventDefault();
             webpg.jq("#createsig-dialog").dialog({
                 'resizable': true,
                 'minHeight': 250,
@@ -2199,6 +2314,7 @@ webpg.keymanager = {
         });
         webpg.jq('#' + type + '_keylist').off('click', '.photo-option-button-delete');
         webpg.jq('#' + type + '_keylist').on('click', '.photo-option-button-delete', function(e){
+            e.preventDefault();
             var params = this.id.split('-');
             var refresh = false;
             webpg.jq("#delphoto-confirm").dialog({
@@ -2244,6 +2360,7 @@ webpg.keymanager = {
         webpg.jq('.revsig-button').button();
         webpg.jq('#' + type + '_keylist').off('click', '.revisg-button');
         webpg.jq('#' + type + '_keylist').on('click', '.revisg-button', function(e){
+            e.preventDefault();
             var params = this.id.split('-');
             var calling_button = this;
             var sig_details = webpg.jq(calling_button).parent()[0].id.split('-');
@@ -2303,6 +2420,7 @@ webpg.keymanager = {
         webpg.jq('.delsig-button').button();
         webpg.jq('#' + type + '_keylist').off('click', '.delsig-button');
         webpg.jq('#' + type + '_keylist').on('click', '.delsig-button', function(e){
+            e.preventDefault();
             var params = this.id.split('-');
             var calling_button = this;
             var sig_details = webpg.jq(calling_button).parent()[0].id.split('-');
@@ -2355,6 +2473,7 @@ webpg.keymanager = {
 
         webpg.jq('#' + type + '_keylist').off('click', '.private_keylist, .public_keylist');
         webpg.jq('#' + type + '_keylist').on('click', '.private_keylist, .public_keylist', function(e) {
+            e.preventDefault();
             var key = (webpg.jq(this).find('a').length > 0)
                 ? webpg.jq(this).find('a')[0].name
                 : null;
@@ -2552,6 +2671,7 @@ webpg.keymanager = {
         if (type == 'public') {
             // Setup the search input
             webpg.jq("#pubkey-search").unbind("change").bind("change", function(e) {
+                e.preventDefault();
                 // Sometimes the event is a duplicate, so check the
                 //  data object for "original_value"
                 if (webpg.jq(this).data("original_value") == this.value)
@@ -2580,6 +2700,7 @@ webpg.keymanager = {
                             nkeylist, 'public');
                         webpg.jq("#dialog-modal:ui-dialog").dialog('destroy');
                 });
+                return false;
             })
         }
         if (window.navigator.platform.toLowerCase().indexOf("win") > -1) {
