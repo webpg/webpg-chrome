@@ -800,6 +800,8 @@ webpg.keymanager = {
                           var attempt = 0;
                           reader.onload = (function(theFile) {
                               return function(e) {
+                                  if (e.target.result.substr(0,15) != "-----BEGIN PGP")
+                                      e.target.error = true;
                                   if (e.target.error) {
                                       webpg.jq("#import-list").html("<ul><li><strong><span class='error-text' style='padding-right:12px;'>" + 
                                           _("Error") + ":</span>" + 
@@ -819,8 +821,8 @@ webpg.keymanager = {
                                       webpg.jq("#import-list").html(msg.join(''));
                                   } else {
                                       webpg.jq("#importkey_name")[0].value = '';
-                                      //webpg.jq("#importkey-dialog").dialog("destroy");
-                                      //webpg.keymanager.buildKeylistProxy(null, "public", null, null, null);
+                                      webpg.jq("#importkey-dialog").dialog("destroy");
+                                      webpg.keymanager.buildKeylistProxy(null, "public", null, null, null);
                                   }
                               }
                           })(f);
@@ -846,14 +848,13 @@ webpg.keymanager = {
                           // files is a FileList of File objects. List some properties.
                           var f = files[0];
                           if (files.length == 1) {
-                              console.log(f.type);
-                              if (f.type != "application/pgp-encrypted") {
-                                  e.target.value = "";
-                                  msg = ['<li class="error-text"><strong>', _("Only Text Files are supported"), '</li>'];
-                              } else {
-                                  msg = ['<li>', (f.type || 'n/a'), ' - ', f.size, ' bytes</li>'];
-                                  webpg.jq("#importkey_button").attr("disabled", false);
-                              }
+//                              if (f.type != "" || f.type != "application/pgp-encrypted") {
+//                                  e.target.value = "";
+//                                  msg = ['<li class="error-text"><strong>', _("Only Text Files are supported"), '</li>'];
+//                              } else {
+                                msg = ['<li>', (f.type || 'n/a'), ' - ', f.size, ' bytes</li>'];
+                                webpg.jq("#importkey_button").attr("disabled", false);
+//                              }
                           }
                           webpg.jq(this).parent().find('#import-list').html('<ul>' + msg.join('') + '</ul>');
                       }, false);
@@ -1960,7 +1961,7 @@ webpg.keymanager = {
                             'click': function() {
                                 webpg.jq("#export-dialog-copytext")[0].select();
                                 webpg.jq("#export-dialog-msg").html(
-                                    webpg.utils.copyToClipboard(window, document)
+                                    webpg.utils.copyToClipboard(window, document).msg
                                 );
                                 webpg.jq("#export-dialog-msg")[0].style.display="block"
                             },
