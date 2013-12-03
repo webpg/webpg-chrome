@@ -636,7 +636,7 @@ webpg.inline_results = {
                                     this.textContent = _("DISPLAY ORIGINAL");
                                     webpg.jq('#signature_text').show();
                                     webpg.jq('#original_text').hide();
-                                    webpg.inline_results.doResize(true)
+                                    webpg.inline_results.doResize()
                                 }
                             });
                             webpg.jq('.copy_to_clipboard').click(function(){
