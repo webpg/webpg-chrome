@@ -18,13 +18,17 @@ webpg.options = {
             browserWindow - <window> The Window object housing firefoxOverlay.xul
             or thunderbirdOverlay.xul in Mozilla applications - not passed in Google Chrome
     */
-    init: function(browserWindow) {
+    init: function(browserWindow)
+    {
         var _ = webpg.utils.i18n.gettext;
         document.title = _("WebPG Options");
         document.dir = (webpg.utils.isRTL() ? 'rtl' : 'ltr');
         if (webpg.utils.detectedBrowser.vendor == "mozilla")
+        {
             webpg.plugin = browserWindow.webpg.plugin;
+        }
         else if (webpg.utils.detectedBrowser.product == "chrome")
+        {
             webpg.plugin = chrome.extension.getBackgroundPage().webpg.plugin;
         }
         

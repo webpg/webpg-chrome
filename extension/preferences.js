@@ -695,7 +695,7 @@ webpg.preferences = {
         set: function(data) {
             webpg.localStorage.setItem('xoauth2_data', JSON.stringify(data));
         }
-    }
+    },
 	
 	/*
         Class: webpg.preferences.site_exceptions
