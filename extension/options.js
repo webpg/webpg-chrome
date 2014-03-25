@@ -49,7 +49,7 @@ webpg.options = {
             if (pf == "Win") {
                 platform = "-mswindows";
             }
-            if (pf == "Mac") {
+            else if (pf == "Mac") {
                 platform = "-macosx";
             }
             if (webpg.plugin && webpg.plugin.valid) {
