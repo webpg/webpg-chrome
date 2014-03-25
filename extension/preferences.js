@@ -658,6 +658,49 @@ webpg.preferences = {
             webpg.localStorage.setItem('xoauth2_data', JSON.stringify(data));
         }
     },
+	
+	/*
+        Class: webpg.preferences.site_exceptions
+            Provides methods to get/set the "site_exceptions" user white & blacklists.
+    */
+	site_exceptions: {
+        get: function() {
+            var stored_data = webpg.localStorage.getItem('site_exceptions');
+            return (stored_data && stored_data.length > 1) ? JSON.parse(stored_data) : { whitelist: [], blacklist: [] };
+        },
+		
+		add: function(type, site) {
+			var site_exceptions = webpg.preferences.site_exceptions.get();
+			if (type == "whitelist") {
+				site_exceptions.whitelist.push(site);
+			}
+			else if (type == "blacklist") {
+				site_exceptions.blacklist.push(site);
+			}
+			else
+			{
+				alert("Code error in site_exceptions preference handler.");
+			}
+			
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(webpg.utils.unique(site_exceptions)));
+		},
+		
+		remove: function(type, site) {
+			var site_exceptions = webpg.preferences.site_exceptions.get();
+			if (type == "whitelist") {
+				site_exceptions.whitelist.splice(webpg.jq.inArray(site, site_exceptions), 1);
+			}
+			else if (type == "blacklist") {
+				site_exceptions.blacklist.splice(webpg.jq.inArray(site, site_exceptions), 1);
+			}
+			else
+			{
+				alert("Code error in site_exceptions preference handler.");
+			}
+			
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(webpg.utils.unique(site_exceptions)));
+		},
+    },
 
 };
 

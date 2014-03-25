@@ -187,6 +187,24 @@ webpg.utils = {
             'anchor': result[12]
         }
     },
+	
+	/*
+		Function: unique
+			Returns a copy of a string array without any duplicate values
+		
+		Parameters:
+			array - string[] The array to unique
+			
+		Returns:
+			string[] - The copy without duplicates
+	*/
+	unique: function(list) {
+		var result = [];
+			webpg.jq.each(list, function(i, e) {
+				if (webpg.jq.inArray(e, result) == -1) result.push(e);
+			});
+		return result;
+	},
 
     formatSearchParameter: function(item) {
         var pParam = item.split(":")[0];
