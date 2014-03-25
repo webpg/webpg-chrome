@@ -14,14 +14,14 @@ webpg.utils = {
             Initializes the webpg.utils object and setups up required overrides.
     */
     init: function() {
-        if (this.detectedBrowser['vendor'] == "mozilla") {
+        if (this.detectedBrowser.vendor === "mozilla") {
             if (webpg.constants.debug.LOG) {
                 // We are using Mozilla, so make `console.log` an alias to
                 //  something that provides more information than the standard
                 //  console logging utility.
 
                 // TODO: This is ugly and buggy; we should consider replacing
-                //  with something a little more elegant and reliable. 
+                //  with something a little more elegant and reliable.
 
                 // Set the console.log method to use the factory console
                 if (typeof(Application.console.log)!='undefined') {
@@ -48,10 +48,10 @@ webpg.utils = {
                         for (var i=0; i<arguments.length; i++) {
                             // If the argument passed is an object, convert it
                             //  to a string
-                            if (typeof(arguments[i])=="undefined")
+                            if (typeof(arguments[i])==="undefined")
                                 arguments[i] = "<undefined>";
-                            else if (typeof(arguments[i]) == "object")
-                                if (arguments[i] == null) {
+                            else if (typeof(arguments[i]) === "object")
+                                if (arguments[i] === null) {
                                     arguments[i] = "<null>";
                                 } else {
                                     try {
@@ -65,11 +65,11 @@ webpg.utils = {
                         }
                         // Get the stack trace information so we can display the
                         //  calling function(s) name and line number(s)
-                        var stack = (new Error).stack.split("\n").slice(1);
-                        for (var i=0; i<stack.length - 1; i++) {
+                        var stack = new Error().stack.split("\n").slice(1);
+                        for (i=0; i<stack.length - 1; i++) {
                             var stack_i = stack[i].split("@");
                             var func = (stack[i].search("@") > 1) ? stack_i[0] + "@" : "";
-                            var fileAndLine = stack[i].split("/").pop()
+                            var fileAndLine = stack[i].split("/").pop();
                             var dp = (arguments.length > 0) ? arguments.length - 1 : 0;
                             arguments[dp] += "\n[" + func + fileAndLine + "]";
                         }
@@ -163,7 +163,7 @@ webpg.utils = {
                         .exec(window.location.search);
         return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
     },
- 
+
     /*
         Function: parseUrl
             Returns an object containing the many various elements of a URL
@@ -175,7 +175,7 @@ webpg.utils = {
             <obj> - An object containing the many various elements of a URL
     */
     parseUrl: function(url) {
-        var re = /^((\w+):\/\/\/?)?((\w+):?(\w+)?@)?([^\/\?:]+):?(\d+)?(\/?[^\?#;\|]+)?([;\|])?([^\?#]+)?\??([^#]+)?#?(\w*)/gi
+        var re = /^((\w+):\/\/\/?)?((\w+):?(\w+)?@)?([^\/\?:]+):?(\d+)?(\/?[^\?#;\|]+)?([;\|])?([^\?#]+)?\??([^#]+)?#?(\w*)/gi;
         result = re.exec(url);
         return { 'url': result[0],
             'proto_full': result[1],
@@ -185,7 +185,7 @@ webpg.utils = {
             'path': result[8],
             'query': result[11],
             'anchor': result[12]
-        }
+        };
     },
 	
 	/*
@@ -210,8 +210,8 @@ webpg.utils = {
         var pParam = item.split(":")[0];
         var pValue = item.split(":")[1];
 
-        if (pValue != "true" && pValue != "false"
-        && isNaN(pValue)) {
+        if (pValue != "true" && pValue != "false" &&
+        isNaN(pValue)) {
             return item.replace(
                     new RegExp("(.*?):(.*)", "g"
                 ),
@@ -241,25 +241,16 @@ webpg.utils = {
     },
 
     escape: function(str) {
-        if (typeof(str)=='number'||typeof(str)=='undefined')
+        if (typeof(str)==='number'||typeof(str)==='undefined')
             return str;
 
-        var map = {
-            "&" : "amp",
-            "'": "#39",
-            '"': "quot",
-            "<": "lt",
-            ">": "gt"
-
-        };
-
-        return str.replace( /[&'"<>]/g, function(m) {
-            return "&" + map[m] + ";";
-        });
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
     },
 
     getInnerText: function(element) {
-        if (webpg.utils.detectedBrowser['product'] == "chrome" && typeof(element) == 'object')
+        if (webpg.utils.detectedBrowser.product === "chrome" && typeof(element) === 'object')
             return element.innerText;
 
         var text = "";
@@ -283,19 +274,19 @@ webpg.utils = {
             text - <str> The string to parse
     */
     clean: function(text) {
-        reg = new RegExp("<div[^>]*><br></div>", "gi");
+        var reg = new RegExp("<div[^>]*><br></div>", "gi");
         str = text.replace(reg, "\n");
 
         reg = new RegExp("<div[^>]*>(.*?)</div>", "gi");
         str = text.replace(reg, "\n$1");
 
-        var reg = new RegExp("<div[^>]*><br></div>", "gi");
+        reg = new RegExp("<div[^>]*><br></div>", "gi");
         str = str.replace(reg, "\n");
 
-        var reg = new RegExp("</p>", "gi");
+        reg = new RegExp("</p>", "gi");
         str = str.replace(reg, "</p>\n");
 
-        var reg = new RegExp("<br[^>]*>", "gi");
+        reg = new RegExp("<br[^>]*>", "gi");
         str = str.replace(reg,"");
 
         reg = new RegExp("<wbr>", "gi");
@@ -313,7 +304,7 @@ webpg.utils = {
         reg = new RegExp("&nbsp;", "g");
         str = str.replace(reg, " ");
 
-        return (str.indexOf("\n") == 0) ? str.substr(1) : str;
+        return (str.indexOf("\n") === 0) ? str.substr(1) : str;
     },
 
     /*
@@ -324,50 +315,52 @@ webpg.utils = {
             id - <str> The unique ID of the frame to locate
     */
     getFrameById: function(id) {
-        if (webpg.utils.detectedBrowser['product'] == 'thunderbird') {
-            var iframes = content.document.getElementsByTagName("iframe");
-            for (var i=0; i < iframes.length; i++) {
-                if (iframes[i].id == id)
+        var iframes, i, x, browser;
+        if (webpg.utils.detectedBrowser.product === 'thunderbird') {
+            iframes = content.document.getElementsByTagName("iframe");
+            for (i=0; i < iframes.length; i++) {
+                if (iframes[i].id === id)
                     return iframes[i];
             }
             var mainWindow = webpg.utils.mozilla.getChromeWindow();
             var tabmail = mainWindow.document.getElementById("tabmail");
             for (var ti = 0; ti < tabmail.tabInfo.length; ti++) {
                 var tab = tabmail.tabInfo[ti];
-                if (tab.mode.name == "message") {
-                    var browser = tab.mode.getBrowser();
+                if (tab.mode.name === "message") {
+                    browser = tab.mode.getBrowser();
                     iframes = browser.querySelectorAll("iframe");
-                    for (var i=0; i < iframes.length; i++) {
-                        if (iframes[i].id == id)
+                    for (i=0; i < iframes.length; i++) {
+                        if (iframes[i].id === id)
                             return iframes[i];
                     }
                 }
             }
-        } else if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-            if (webpg.utils.detectedBrowser['product'] == 'conkeror')
-                var iframes = window.buffers.current.browser.contentDocument.getElementsByTagName("iframe");
+        } else if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+            if (webpg.utils.detectedBrowser.product === 'conkeror')
+                iframes = window.buffers.current.browser.contentDocument.getElementsByTagName("iframe");
             else
-                var iframes = gBrowser.contentDocument.getElementsByTagName("iframe");
-            for (var i=0; i < iframes.length; i++) {
-                if (iframes[i].id == id)
+                iframes = gBrowser.contentDocument.getElementsByTagName("iframe");
+            for (i=0; i < iframes.length; i++) {
+                if (iframes[i].id === id)
                     return iframes[i];
             }
             // Check for iframes within frame elements
             var browserWindow = webpg.utils.mozilla.getChromeWindow();
-            for (var i = 0; i < browserWindow.content.frames.length; i++) {
-                var iframes = browserWindow.content.frames[i].frameElement.contentDocument.getElementsByTagName("iframe");
-                for (var x=0; x < iframes.length; x++) {
-                    if (iframes[x].id == id)
+            for (i = 0; i < browserWindow.content.frames.length; i++) {
+                iframes = browserWindow.content.frames[i].frameElement.contentDocument.getElementsByTagName("iframe");
+                for (x=0; x < iframes.length; x++) {
+                    if (iframes[x].id === id)
                         return iframes[x];
                 }
             }
+            var currentTab;
             // Check all windows
-            if (webpg.utils.detectedBrowser['product'] == 'conkeror') {
-                for (var i = 0; i < window.buffers.container.childNodes.length; i++) {
-                    var currentTab = window.buffers.container.childNodes.item(i).conkeror_buffer_object;
-                    var iframes = currentTab.browser.contentDocument.getElementsByTagName("iframe");
-                    for (var x=0; x < iframes.length; x++) {
-                        if (iframes[x].id == id)
+            if (webpg.utils.detectedBrowser.product === 'conkeror') {
+                for (i = 0; i < window.buffers.container.childNodes.length; i++) {
+                    currentTab = window.buffers.container.childNodes.item(i).conkeror_buffer_object;
+                    iframes = currentTab.browser.contentDocument.getElementsByTagName("iframe");
+                    for (x=0; x < iframes.length; x++) {
+                        if (iframes[x].id === id)
                             return iframes[x];
                     }
                 }
@@ -379,13 +372,13 @@ webpg.utils = {
                    index++) {
 
                     // Get the next tab
-                    var currentTab = tabbrowser.tabContainer.childNodes[index];
+                    currentTab = tabbrowser.tabContainer.childNodes[index];
 
                     // Check if this tab contains the frame we are looking for
-                    var browser = tabbrowser.getBrowserAtIndex(index);
-                    var iframes = browser.contentDocument.getElementsByTagName("iframe");
-                    for (var x=0; x < iframes.length; x++) {
-                        if (iframes[x].id == id)
+                    browser = tabbrowser.getBrowserAtIndex(index);
+                    iframes = browser.contentDocument.getElementsByTagName("iframe");
+                    for (x=0; x < iframes.length; x++) {
+                        if (iframes[x].id === id)
                             return iframes[x];
                     }
                 }
@@ -411,17 +404,17 @@ webpg.utils = {
         var _ = webpg.utils.i18n.gettext;
         var status = {
             'msg': _("Text copied to clipboard"),
-            'success': true,
-        }
+            'success': true
+        };
         try {
-            doc.execCommand("Copy")
-        } catch(err) {
+            doc.execCommand("Copy");
+        } catch(cperr) {
             try {
                 if (win.getSelection && doc.activeElement){
                     ae = doc.activeElement;
-                    if (ae.nodeName == "TEXTAREA" ||
-                        (ae.nodeName == "INPUT" && 
-                        ae.getAttribute("type").toLowerCase() == "text")){
+                    if (ae.nodeName === "TEXTAREA" ||
+                        (ae.nodeName === "INPUT" &&
+                        ae.getAttribute("type").toLowerCase() === "text")){
                         userSelection = ae.textContent.substring(ae.selectionStart, ae.selectionEnd);
                     } else {
                         userSelection = win.getSelection();
@@ -432,8 +425,8 @@ webpg.utils = {
                 var gClipboardHelper = Components.classes["@mozilla.org/widget/clipboardhelper;1"].
                         getService(Components.interfaces.nsIClipboardHelper);
                 gClipboardHelper.copyString(userSelection);
-            } catch(err) {
-                console.log(err);
+            } catch(cliperr) {
+                console.log(cliperr);
                 status.success = false;
                 status.msg = _("There may have been a problem placing the data into the clipboard") + "; " + err;
             }
@@ -460,17 +453,18 @@ webpg.utils = {
     */
     openNewTab: function(url, tabIndex) {
         var _ = webpg.utils.i18n.gettext;
-        switch (webpg.utils.detectedBrowser['product']) {
+        switch (webpg.utils.detectedBrowser.product) {
             case "firefox":
             case "thunderbird":
             case "conkeror":
             case "seamonkey":
-                if (url.search("options.html") > -1)
-                    url = url.replace("options.html", "XULContent/options.xul")
-                        .replace("?", "?options_tab=0&");
-                if (url.search("key_manager.html") > -1)
-                    url = url.replace("key_manager.html", "XULContent/options.xul")
-                        .replace("?", "?options_tab=1&");
+                var gBrowser;
+//                if (url.search("options.html") > -1)
+//                    url = url.replace("options.html", "XULContent/options.xul")
+//                        .replace("?", "?options_tab=0&");
+//                if (url.search("key_manager.html") > -1)
+//                    url = url.replace("key_manager.html", "XULContent/options.xul")
+//                        .replace("?", "?options_tab=1&");
                 wTitle = (url.search("options_tab=0") > -1) ? _("WebPG Options") :
                     (url.search("options_tab=1") > -1) ? _("WebPG Key Manager") :
                     (url.search("options_tab=2") > -1) ? _("About WebPG") : "";
@@ -481,17 +475,17 @@ webpg.utils = {
                     try {
                         openTab("chromeTab", { 'chromePage': url });
                     } catch (e) {
-                        if (webpg.utils.detectedBrowser['product'] == 'conkeror')
-                            var gBrowser = window.buffers.current.browser;
+                        if (webpg.utils.detectedBrowser.product === 'conkeror')
+                            gBrowser = window.buffers.current.browser;
                         else
-                            var gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
-                        gBrowser.selectedTab = gBrowser.addTab(url)
+                            gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
+                        gBrowser.selectedTab = gBrowser.addTab(url);
                     }
                 } else {
                     try {
                         openTab("chromeTab", { 'chromePage': url });
-                    } catch (e) {
-                        var gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
+                    } catch (e1) {
+                        gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
                         gBrowser.selectedTab = gBrowser.addTab(url);
                     }
                 }
@@ -500,9 +494,9 @@ webpg.utils = {
             case "chrome":
                 if (chrome.tabs) {
                     if (tabIndex) {
-                        chrome.tabs.create({'url': url, 'index': tabIndex})
+                        chrome.tabs.create({'url': url, 'index': tabIndex});
                     } else {
-                        chrome.tabs.getSelected(null, function(tab) { 
+                        chrome.tabs.getSelected(null, function(tab) {
                             chrome.tabs.create({'url': url, 'index': tab.index});
                         });
                     }
@@ -538,7 +532,7 @@ webpg.utils = {
 
         selectionTarget = (forcedElement) ? forcedElement : document.activeElement;
 
-        if (this.detectedBrowser['vendor'] == "mozilla") {
+        if (this.detectedBrowser.vendor === "mozilla") {
             try {
                 selectionObject = selectionTarget.contentWindow.document.getSelection();
                 selectionTarget = selectionTarget.contentWindow.document.activeElement;
@@ -550,7 +544,7 @@ webpg.utils = {
             selectionObject = window.getSelection();
         }
 
-        if (!selectionObject.toString().length > 0 && selectionTarget.nodeName == "IFRAME" &&
+        if (selectionObject.toString().length <= 0 && selectionTarget.nodeName === "IFRAME" &&
             selectionTarget.className.indexOf("webpg-result-frame") < 0 &&
             selectionTarget.className.indexOf("webpg-dialog") < 0) {
             if (this.debug) console.log(selectionTarget.className);
@@ -559,24 +553,24 @@ webpg.utils = {
             selectionTarget = selectionTarget.activeElement;
             selectionText = selectionObject.toString();
         } else {
-            if (selectionTarget.nodeName == "TEXTAREA" || selectionTarget.nodeName == "INPUT")
+            if (selectionTarget.nodeName === "TEXTAREA" || selectionTarget.nodeName === "INPUT")
                 selectionText = selectionTarget.value.substring(selectionTarget.selectionStart, selectionTarget.selectionEnd);
         }
 
         if (selectionObject && selectionObject.rangeCount > 0) {
             webpg.overlay.insert_range = selectionObject.getRangeAt(0);
-            if (webpg.overlay.insert_range.startOffset == webpg.overlay.insert_range.endOffset)
+            if (webpg.overlay.insert_range.startOffset === webpg.overlay.insert_range.endOffset)
                 webpg.overlay.insert_range = null;
         } else {
             webpg.overlay.insert_range = null;
         }
 
-        if ((!selectionText || !selectionText.length > 0) && selectionTarget) {
-            selectionText = (selectionTarget.nodeName == "TEXTAREA") ?
+        if ((!selectionText || selectionText.length <= 0) && selectionTarget) {
+            selectionText = (selectionTarget.nodeName === "TEXTAREA") ?
                 selectionTarget.value : selectionTarget.innerText;
-            if (this.detectedBrowser['vendor'] == "mozilla" && selectionTarget.nodeName != "TEXTAREA") {
+            if (this.detectedBrowser.vendor === "mozilla" && selectionTarget.nodeName != "TEXTAREA") {
                 var nodes = selectionTarget.childNodes;
-                var selectionText = "";
+                selectionText = "";
                 for (var i=0; i<nodes.length; i++) {
                     selectionText += nodes[i].textContent || "\n\n";
                 }
@@ -584,11 +578,11 @@ webpg.utils = {
         }
 
         if (selectionTarget && selectionText.length > 0) {
-            var textValue = (selectionTarget.nodeName == "TEXTAREA") ?
+            var textValue = (selectionTarget.nodeName === "TEXTAREA") ?
                 selectionTarget.value : selectionTarget.innerText;
-            if (selectionTarget.selectionStart != undefined
-            && selectionTarget.selectionStart > 0
-            && selectionTarget.selectionStart !== textValue.length) {
+            if (selectionTarget.selectionStart !== undefined &&
+            selectionTarget.selectionStart > 0 &&
+            selectionTarget.selectionStart !== textValue.length) {
                 preSelection = textValue.substr(0, selectionTarget.selectionStart);
                 postSelection = textValue.substr(selectionTarget.selectionEnd, textValue.length);
             }
@@ -601,7 +595,7 @@ webpg.utils = {
     },
 
     getPlainText: function(node) {
-        if (webpg.utils.detectedBrowser['product'] == "chrome" && typeof(node) == 'object')
+        if (webpg.utils.detectedBrowser.product === "chrome" && typeof(node) === 'object')
             return node.innerText;
 
 	    // used for testing:
@@ -615,39 +609,39 @@ webpg.utils = {
 				    .replace(/[ ]+$/gm, "")
 				    .replace(/^[ ]+/gm, "")
 				    .replace(/\n\n/g, "\n");
-	    }
+	    };
 	    var removeWhiteSpace = function(node) {
 		    // getting rid of empty text nodes
 		    var isWhite = function(node) {
 			    return !(/[^\t\n\r ]/.test(node.nodeValue));
-		    }
+		    };
 		    var ws = [];
 		    var findWhite = function(node){
 			    for(var i=0; i<node.childNodes.length; i++) {
 				    var n = node.childNodes[i];
 				    if (n.nodeType==3 && isWhite(n)){
-					    ws.push(n)
+					    ws.push(n);
 				    } else if (n.hasChildNodes()) {
 					    findWhite(n);
 				    }
 			    }
-		    }
+		    };
 		    findWhite(node);
 		    for(var i=0;i<ws.length; i++) {
-			    ws[i].parentNode.removeChild(ws[i])
+			    ws[i].parentNode.removeChild(ws[i]);
 		    }
 
-	    }
+	    };
 	    var sty = function(n, prop) {
 		    // Get the style of the node.
 		    // Assumptions are made here based on tagName.
 		    if(n.style[prop]) return n.style[prop];
 		    var s = n.currentStyle || n.ownerDocument.defaultView.getComputedStyle(n, null);
-		    if(n.tagName == "SCRIPT") return "none";
+		    if(n.tagName === "SCRIPT") return "none";
 		    if(!s[prop]) return "LI,P,TR".indexOf(n.tagName) > -1 ? "block" : n.style[prop];
 		    if(s[prop] =="block" && n.tagName=="TD") return "feaux-inline";
 		    return s[prop];
-	    }
+	    };
 
 	    var blockTypeNodes = "table-row,block,list-item";
 	    var isBlock = function(n) {
@@ -655,7 +649,7 @@ webpg.utils = {
 		    var s = sty(n, "display") || "feaux-inline";
 		    if(blockTypeNodes.indexOf(s) > -1) return true;
 		    return false;
-	    }
+	    };
 	    var recurse = function(n) {
 		    // Loop through all the child nodes
 		    // and collect the text, noting whether
@@ -667,20 +661,20 @@ webpg.utils = {
 			    return "";
 		    }
 		    var s = sty(n, "display");
-		    if(s == "none") return "";
+		    if(s === "none") return "";
 		    var gap = isBlock(n) ? "\n" : " ";
 		    t += gap;
 		    for(var i=0; i<n.childNodes.length; i++){
 			    var c = n.childNodes[i];
-			    if(c.nodeType == 3) t += c.nodeValue;
+			    if(c.nodeType === 3) t += c.nodeValue;
 			    if(c.childNodes.length) recurse(c);
 		    }
 		    t += gap;
 		    return t;
-	    }
+	    };
 
 	    // Use a copy because stuff gets changed
-	    if (typeof(node) == 'object') {
+	    if (typeof(node) === 'object') {
 	        node = node.cloneNode(true);
 	    } else {
 	        cloneNode = document.createElement('pre');
@@ -724,7 +718,7 @@ webpg.utils = {
             // gmail doesn't wrap lines with less than 81 characters
             // or lines that have been quoted from previous messages
             // in the usual way, so we don't bother either.
-            if (lines[i].length <= 80 || lines[i].substring(0,2) == "> ")
+            if (lines[i].length <= 80 || lines[i].substring(0,2) === "> ")
                 result = result + lines[i] + "\n";
             else
                 // If we're wrapping a line, each of the resulting
@@ -734,6 +728,35 @@ webpg.utils = {
         }
 
         return result;
+    },
+
+    gmailNotify: function(text, timeout) {
+      timeout = (timeout===undefined) ? 3000 : timeout;
+
+      var doc = webpg.gmail.getCanvasFrameDocument();
+
+      webpg.jq(doc)
+        .find(".J-J5-Ji .vh")
+          .first()
+            .text(text)
+            .css('visibility', 'visible');
+
+      setTimeout(function(e) {
+        webpg.jq(doc)
+          .find(".J-J5-Ji .vh")
+            .first()
+              .text('')
+              .css('visibility', 'hidden');
+      }, timeout);
+    },
+
+    gmailCancelNotify: function() {
+      var doc = webpg.gmail.getCanvasFrameDocument();
+      webpg.jq(doc)
+        .find(".J-J5-Ji .vh")
+          .first()
+            .text('')
+            .css('visibility', 'hidden');
     },
 
     /*
@@ -756,10 +779,10 @@ webpg.utils = {
         {
             var index = text.lastIndexOf(" ", limit);
             // If the first word is too long, look for the first space
-            if (index == -1)
+            if (index === -1)
                 index = text.indexOf(" ");
             // If there are no more spaces at all, give up.
-            if (index == -1)
+            if (index === -1)
             {
                 break;
             }
@@ -774,11 +797,10 @@ webpg.utils = {
     },
 
     // Gmail replaces any text that looks like a link and encloses it with anchor tags.
-    //  This replaces any links without tags with 
+    //  This replaces any links without tags with
     linkify: function(inputText) {
-        var tldList = "(asia|biz|cat|coop|edu|info|eu.int|int|gov|jobs|mil|mobi|name|tel|travel|aaa.pro|aca.pro|acct.pro|avocat.pro|bar.pro|cpa.pro|jur.pro|law.pro|med.pro|eng.pro|pro|ar.com|br.com|cn.com|de.com|eu.com|gb.com|hu.com|jpn.com|kr.com|no.com|qc.com|ru.com|sa.com|se.com|uk.com|us.com|uy.com|za.com|com|ab.ca|bc.ca|mb.ca|nb.ca|nf.ca|nl.ca|ns.ca|nt.ca|nu.ca|on.ca|pe.ca|qc.ca|sk.ca|yk.ca|gc.ca|ca|gb.net|se.net|uk.net|za.net|net|ae.org|za.org|org|[^\.\/]+\.uk|act.edu.au|nsw.edu.au|nt.edu.au|qld.edu.au|sa.edu.au|tas.edu.au|vic.edu.au|wa.edu.au|act.gov.au|nt.gov.au|qld.gov.au|sa.gov.au|tas.gov.au|vic.gov.au|wa.gov.au|[^\.\/]+\.au|de|dk|tv|com.ly|net.ly|gov.ly|plc.ly|edu.ly|sch.ly|med.ly|org.ly|id.ly|ly|xn--55qx5d.hk|xn--wcvs22d.hk|xn--lcvr32d.hk|xn--mxtq1m.hk|xn--gmqw5a.hk|xn--ciqpn.hk|xn--gmq050i.hk|xn--zf0avx.hk|xn--io0a7i.hk|xn--mk0axi.hk|xn--od0alg.hk|xn--od0aq3b.hk|xn--tn0ag.hk|xn--uc0atv.hk|xn--uc0ay4a.hk|com.hk|edu.hk|gov.hk|idv.hk|net.hk|org.hk|hk|ac.cn|com.cn|edu.cn|gov.cn|net.cn|org.cn|mil.cn|xn--55qx5d.cn|xn--io0a7i.cn|xn--od0alg.cn|ah.cn|bj.cn|cq.cn|fj.cn|gd.cn|gs.cn|gz.cn|gx.cn|ha.cn|hb.cn|he.cn|hi.cn|hl.cn|hn.cn|jl.cn|js.cn|jx.cn|ln.cn|nm.cn|nx.cn|qh.cn|sc.cn|sd.cn|sh.cn|sn.cn|sx.cn|tj.cn|xj.cn|xz.cn|yn.cn|zj.cn|hk.cn|mo.cn|tw.cn|cn|edu.tw|gov.tw|mil.tw|com.tw|net.tw|org.tw|idv.tw|game.tw|ebiz.tw|club.tw|xn--zf0ao64a.tw|xn--uc0atv.tw|xn--czrw28b.tw|tw|aichi.jp|akita.jp|aomori.jp|chiba.jp|ehime.jp|fukui.jp|fukuoka.jp|fukushima.jp|gifu.jp|gunma.jp|hiroshima.jp|hokkaido.jp|hyogo.jp|ibaraki.jp|ishikawa.jp|iwate.jp|kagawa.jp|kagoshima.jp|kanagawa.jp|kawasaki.jp|kitakyushu.jp|kobe.jp|kochi.jp|kumamoto.jp|kyoto.jp|mie.jp|miyagi.jp|miyazaki.jp|nagano.jp|nagasaki.jp|nagoya.jp|nara.jp|niigata.jp|oita.jp|okayama.jp|okinawa.jp|osaka.jp|saga.jp|saitama.jp|sapporo.jp|sendai.jp|shiga.jp|shimane.jp|shizuoka.jp|tochigi.jp|tokushima.jp|tokyo.jp|tottori.jp|toyama.jp|wakayama.jp|yamagata.jp|yamaguchi.jp|yamanashi.jp|yokohama.jp|ac.jp|ad.jp|co.jp|ed.jp|go.jp|gr.jp|lg.jp|ne.jp|or.jp|jp|co.in|firm.in|net.in|org.in|gen.in|ind.in|nic.in|ac.in|edu.in|res.in|gov.in|mil.in|in)";
         var replacedText, regex;
-        
+
         // URLs in <a> tags with or without other attributes
         regex = /<a(.+?href=[\"|\']([^\"|^\']+?)[\"|\']+?)>/gim;
         replacedText = inputText.replace(regex, '<a href="$2" target="_blank">');
@@ -787,8 +809,8 @@ webpg.utils = {
         regex = /(\b[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b)/gim;
         replacedText = replacedText.replace(regex, '<a href="mailto:$1" target="_blank">$1</a>');
 
-        regex = new RegExp("(\\b((?:[a-z0-9]+):\\/\\/)?(?:[a-z0-9/-]+\\.)*?(?:[a-z0-9]+[\\.](?:(?:" + tldList + ")(?:\\/(?:[a-z0-9\\.]+)?)?)(?=\\s|>|\\||$)))", "gim");
-        replacedText = replacedText.replace(regex, function(match_i, url, protocol) {
+        regex = new RegExp("(\\b([a-z\\-]+:\\/\\/)?((?:(?:(?:[a-z\\d]+(?:[a-z\\d\\-@]{1,2}[a-z\\d]){1,10}\\.))+[a-z]{2,4}(?![\\\"|\\'|@|<]|[\\/][\\\"])|(?:(?:\\d{1,3}\\.){3}\\d{1,3}))(?:\\:\\d+)?(?:\\/[\\-a-z\\d%_.~+]{1,10})*(?:\\?[;&a-z\\d%_.~+=\\-]+)?(?:\\#[\\-a-z\\d_]+)?)\\b)", "gim");
+        replacedText = replacedText.replace(regex, function(match_i, url, protocol, a) {
             return "<a href=\"" + ((!protocol) ? "http://" : "") +
                 url + "\" target=\"_blank\">" + url + "</a>";
         });
@@ -796,11 +818,139 @@ webpg.utils = {
         return replacedText;
     },
 
+    parseMailMessage: function(msg) {
+      var parsedMsg = {},       // The return object
+          boundary,             // The boundary used
+          parts,                // All of the separate parts of the message
+          headers = {},         // Stores all of the header items
+          regex = new RegExp(), // Reusable RegExp Object
+          h;                    // Temporary var to hold the current header item
+
+      // Regex to capture the boundary string
+      regex.compile(/\bboundary=(?:["'])?(.+?)(?:["';\r\n\s])(?:$)?/igm);
+
+      msg = msg.replace(/\r\n/gm, '\n').trim();
+      parsedMsg.multipart = regex.test(msg);
+
+      if (parsedMsg.multipart) {
+        // Recompile the RegExp, because test() messes it up
+        regex.compile(/\bboundary=(?:["'])?(.+?)(?:["';\r\n\s])(?:$)?/igm);
+
+        // Define the boundary
+        boundary = regex.exec(msg)[1];
+
+        // Create a regex that splits the boundaries
+        regex = new RegExp("--" + boundary + "(?!-)", "gm");
+
+        // Split the boundaries
+        parts = msg.split("--" + boundary);
+      } else {
+        regex.compile(/(?:\b)?[\r\n][\r\n]/gm);
+        parts = msg.split(regex);
+      }
+
+      // Remove the header and keep a reference to it for parsing
+      var theaders = parts.splice(0, 1);
+
+      // An inline method to parse the headers of a MIME part
+      parseHeaders = function(theaders) {
+        var headers = {},
+            regex = new RegExp();
+
+        // Regex to capture all of the headers+values (TODO: not perfect yet)
+        regex.compile(/^(\w*?(?:(?:-\w*?)+)?):(?:\s)?(.*(?:(?:[\r\n][\ |\t]+.+)?)+)/gm);
+
+        // Loop through the header items
+        while (h = regex.exec(theaders)) {
+          var key = h[1].toLowerCase().replace(/-/g, '_'),
+              value = h[2];
+
+          if (key === 'content_type' || key === 'content_disposition' ) {
+            headers[key] = {};
+            value.split(/[;|\r\n]/g).every(function(x) {
+              if (x.length > 0) {
+                if (x.search('=') > 0) {
+                  var vstr = x.trim().replace(/[\"|;]/g, ''),
+                      vpair = [];
+                  vpair.push(vstr.slice(0, vstr.indexOf("=")));
+                  vpair.push(vstr.slice(vstr.indexOf("=")+1));
+                  headers[key][vpair[0]] = vpair[1];
+                } else if (x.trim().length > 0) {
+                  var type = (key === 'content_disposition') ?
+                    'disposition' : 'type';
+                  headers[key][type] = x.trim();
+                }
+              }
+              return true;
+            });
+          } else {
+            headers[key] = h[2];
+          }
+        }
+        return headers;
+      }
+
+      parsedMsg.headers = parseHeaders(theaders);
+      parsedMsg.headers.full_headers = (theaders[0] || theaders);
+      parsedMsg.content = parts.join('\r\n\r\n').split(/[\r\n]{4}/)[0].trim();
+
+      parsedMsg.parts = [];
+
+      if (parsedMsg.multipart === false) {
+        parsedMsg.parts.push({'content': parts.join('\r\n\r\n')});
+      } else {
+        for (var msgPart in parts) {
+          if (parts[msgPart] !== '--') {
+            var part = {},
+                headerEnd = parts[msgPart].search(/[\r\n][\r\n]/gm),
+                content = parts[msgPart].substr(headerEnd);
+            part.headers = parseHeaders(parts[msgPart].slice(0, headerEnd));
+            part.headers.full_headers = parts[msgPart].slice(0, headerEnd);
+            part.content = content;
+            part.body = content.split('--'+boundary)[0].trim();
+            regex.compile(/\bboundary=(?:["'])?(.+?)(?:["';\r\n\s])(?:$)?/igm);
+            part.multipart = regex.test(parts[msgPart]);
+            if (part.multipart)
+              parsedMsg.parts.push(webpg.utils.parseMailMessage(parts[msgPart]));
+            else
+              parsedMsg.parts.push(part);
+          }
+        }
+      }
+
+      return parsedMsg;
+    },
+
+    getPGPMimeMsg: function(msg) {
+      var msgHeadersStr = JSON.stringify(msg.headers).toLowerCase();
+      if (msgHeadersStr.search("multipart/(signed|encrypted)") !== -1 &&
+          msgHeadersStr.search("application/pgp-(signature|signed|encrypted)") !== -1)
+        return msg
+      var pgpmsg = null;
+      for (msgp in msg.parts) {
+        if (msg.parts[msgp].hasOwnProperty('headers') &&
+            JSON.stringify(msg.parts[msgp].headers).search("multipart/(signed|encrypted)") !== -1) {
+          pgpmsg = msg.parts[msgp];
+        } else if (msg.parts[msgp].hasOwnProperty('parts')) {
+          pgpmsg = this.getPGPMimeMsg(msg.parts[msgp]);
+        } else if (msg.parts[msgp].hasOwnProperty('content') &&
+                   msg.parts[msgp].content.search(
+                    /(^\s*?)?(-----BEGIN PGP.*?)/gi) !== -1
+                  ) {
+          pgpmsg = msg.parts[msgp];
+        }
+
+        if (pgpmsg !== null)
+          return pgpmsg;
+     }
+     return pgpmsg;
+    },
+
     quoted_printable_encode: function(str) {
-      var hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
+      var hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
       str = webpg.utils.wrapText(str, 71);
-      RFC2045Encode1IN = / \r\n|\r\n|[^!-<>-~ ]/gm,
-      RFC2045Encode1OUT = function (sMatch) {
+      var RFC2045Encode1IN = / \r\n|\r\n|[^!-<>-~ ]/gm;
+      var RFC2045Encode1OUT = function (sMatch) {
         // Encode space before CRLF sequence to prevent spaces from being stripped
         // Keep hard line breaks intact; CRLF sequences
         if (sMatch.length > 1) {
@@ -817,10 +967,60 @@ webpg.utils = {
         }
         return sMatch + '=\r\n';
       };
-      console.log(RFC2045Encode2IN);
       str = str.replace(RFC2045Encode1IN, RFC2045Encode1OUT).replace(RFC2045Encode2IN, RFC2045Encode2OUT);
       // Strip last softline break
       return str.substr(0, str.length - 3);
+    },
+
+    quoted_printable_decode: function(str) {
+      var RFC2045Decode1 = /=\r\n/gm,
+        // Decodes all equal signs followed by two hex digits
+        RFC2045Decode2IN = /=([0-9A-F]{2})/gim,
+        // the RFC states against decoding lower case encodings, but following apparent PHP behavior
+        // RFC2045Decode2IN = /=([0-9A-F]{2})/gm,
+        RFC2045Decode2OUT = function (sMatch, sHex) {
+          return String.fromCharCode(parseInt(sHex, 16));
+        };
+      return str.replace(RFC2045Decode1, '').replace(RFC2045Decode2IN, RFC2045Decode2OUT);
+    },
+
+    base64_decode: function(data) {
+      var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
+        ac = 0,
+        dec = "",
+        tmp_arr = [];
+
+      if (!data) {
+        return data;
+      }
+
+      data += '';
+
+      do { // unpack four hexets into three octets using index points in b64
+        h1 = b64.indexOf(data.charAt(i++));
+        h2 = b64.indexOf(data.charAt(i++));
+        h3 = b64.indexOf(data.charAt(i++));
+        h4 = b64.indexOf(data.charAt(i++));
+
+        bits = h1 << 18 | h2 << 12 | h3 << 6 | h4;
+
+        o1 = bits >> 16 & 0xff;
+        o2 = bits >> 8 & 0xff;
+        o3 = bits & 0xff;
+
+        if (h3 == 64) {
+          tmp_arr[ac++] = String.fromCharCode(o1);
+        } else if (h4 == 64) {
+          tmp_arr[ac++] = String.fromCharCode(o1, o2);
+        } else {
+          tmp_arr[ac++] = String.fromCharCode(o1, o2, o3);
+        }
+      } while (i < data.length);
+
+      dec = tmp_arr.join('');
+
+      return dec;
     },
 
     /*
@@ -830,34 +1030,35 @@ webpg.utils = {
         Parameters:
             data - <json obj> A JSON object with parameters and data to pass
             callback - <func> The callback to be called upon completion
-            doc - <document> The document to add the listener to 
+            doc - <document> The document to add the listener to
     */
     sendRequest: function(data, callback) { // analogue of chrome.extension.sendRequest
-        if (this.detectedBrowser['product'] == 'thunderbird') {
+        var tabID;
+        if (this.detectedBrowser.product === 'thunderbird') {
             var browserWindow = webpg.utils.mozilla.getChromeWindow();
 
-            var tabID = -1;
+            tabID = -1;
 
             try {
-                if (webpg.utils.detectedBrowser['product'] == 'conkeror')
-                    var tabID = window.getBrowser()._webpgTabID;
+                if (webpg.utils.detectedBrowser.product === 'conkeror')
+                    tabID = window.getBrowser()._webpgTabID;
                 else
-                    var tabID = gBrowser.getBrowserForDocument(content.document)._webpgTabID;
+                    tabID = gBrowser.getBrowserForDocument(content.document)._webpgTabID;
             } catch (err) {
                 // Do nothing
             }
 
             data.sender = {
-                'tab': { 'id': tabID },
-            }
+                'tab': { 'id': tabID }
+            };
 
             if (!callback)
-                callback = function() { return };
+                callback = function() { return; };
 
             browserWindow.webpg.background._onRequest(data, data.sender, callback);
             browserWindow.webpg.overlay._onRequest(data, data.sender, callback);
-        } else if (this.detectedBrowser['vendor'] == "mozilla" ||
-            this.detectedBrowser['product'] == "safari") {
+        } else if (this.detectedBrowser.vendor === "mozilla" ||
+            this.detectedBrowser.product === "safari") {
 
             if (!gBrowser) {
                 var browserWindow = webpg.utils.mozilla.getChromeWindow();
@@ -865,34 +1066,40 @@ webpg.utils = {
             }
 
             try {
-                var tabID = gBrowser.getBrowserForDocument(content.document)._webpgTabID;
-            } catch (err) {
-                var tabID = -1;
+                tabID = gBrowser.getBrowserForDocument(content.document)._webpgTabID;
+            } catch (err1) {
+                tabID = -1;
             }
 
             data.sender = {
-                'tab': { 'id': tabID },
-            }
+                'tab': { 'id': tabID }
+            };
 
             var mozDoc = (content) ? content.document : document;
             var request = mozDoc.createTextNode("");
 
-            if (this.detectedBrowser['vendor'] == "mozilla")
+            if (this.detectedBrowser.vendor === "mozilla")
                 request.setUserData("data", data, null);
             else
                 webpg.jq(request).data("data", data);
 
             if (callback) {
-                if (this.detectedBrowser['vendor'] == "mozilla")
+                if (this.detectedBrowser.vendor === "mozilla")
                     request.setUserData("callback", callback, null);
                 else
                     webpg.jq(request).data("callback", callback);
 
                 mozDoc.addEventListener("webpg-listener-response", function(event) {
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla")
-                        var node = event.target, callback = node.getUserData("callback"), response = node.getUserData("response");
-                    else
-                        var node = event.target, callback = webpg.jq(node).data("callback"), response = webpg.jq(node).data("response");
+                    var node = event.target,
+                        callback,
+                        response;
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        callback = node.getUserData("callback");
+                        response = node.getUserData("response");
+                    } else {
+                        callback = webpg.jq(node).data("callback");
+                        response = webpg.jq(node).data("response");
+                    }
                     mozDoc.documentElement.removeChild(node);
                     mozDoc.removeEventListener("webpg-listener-response", arguments.callee, false);
                     return callback(response);
@@ -904,10 +1111,10 @@ webpg.utils = {
             var sender = mozDoc.createEvent("HTMLEvents");
             sender.initEvent("webpg-listener-query", true, false);
             return request.dispatchEvent(sender);
-        } else if (this.detectedBrowser['vendor'] == "opera") {
+        } else if (this.detectedBrowser.vendor === "opera") {
             if (typeof(opera.extension)=='undefined') {
-                if (!typeof(window.frames.extension)!='undefined') {
-                    if (callback == null) {
+                if (typeof(window.frames.extension)!=='undefined') {
+                    if (callback === null) {
                         window.frames.extension.postMessage(data);
                     } else {
                         data.callback = callback.toString();
@@ -919,16 +1126,16 @@ webpg.utils = {
                     );
                 }
             } else {
-                if (callback == null) {
+                if (callback === null) {
                     opera.extension.postMessage(data);
                 } else {
                     data.callback = callback.toString();
                     opera.extension.postMessage(data);
                 }
             }
-        } else if (this.detectedBrowser['vendor'] == "google") {
+        } else if (this.detectedBrowser.vendor === "google") {
             // Check if the callback is null, otherwise the chrome bindings will freak out.
-            if (callback == null)
+            if (callback === undefined || callback === null)
                 chrome.extension.sendRequest(data);
             else
                 chrome.extension.sendRequest(data, callback);
@@ -953,24 +1160,24 @@ webpg.utils = {
                 callback - <func> The callback to be called upon completion
         */
         addListener: function(callback) { // analogue of chrome.extension.onRequest.addListener
-            if (webpg.utils.detectedBrowser['product'] == "safari" ||
-               (webpg.utils.detectedBrowser['vendor'] == "mozilla" &&
-               webpg.utils.detectedBrowser['product'] != "thunderbird")) {
+            if (webpg.utils.detectedBrowser.product === "safari" ||
+               (webpg.utils.detectedBrowser.vendor === "mozilla" &&
+               webpg.utils.detectedBrowser.product !== "thunderbird")) {
                 var mozDoc = (content) ? content.document : document;
                 return mozDoc.addEventListener("webpg-listener-query", function(event) {
 
                     var node = event.target, doc = node.ownerDocument;
 
-                    var userData = (webpg.utils.detectedBrowser['vendor'] == "mozilla") ?
+                    var userData = (webpg.utils.detectedBrowser.vendor === "mozilla") ?
                         node.getUserData("data") : webpg.jq(node).data("data");
 
-                    var userCallback = (webpg.utils.detectedBrowser['vendor'] == "mozilla") ?
+                    var userCallback = (webpg.utils.detectedBrowser.vendor === "mozilla") ?
                         node.getUserData("callback") : webpg.jq(node).data("callback");
 
-                    if (webpg.utils.detectedBrowser['vendor'] != "mozilla" &&  !userData)
+                    if (webpg.utils.detectedBrowser.vendor !== "mozilla" &&  !userData)
                         userData = event.detail.data;
 
-                    if (webpg.utils.detectedBrowser['vendor'] != "mozilla" && !userCallback)
+                    if (webpg.utils.detectedBrowser.vendor !== "mozilla" && !userCallback)
                         userCallback = event.detail.callback;
 
                     return callback(userData, doc, function(data) {
@@ -982,7 +1189,7 @@ webpg.utils = {
                             }
                         }
 
-                        if (webpg.utils.detectedBrowser['vendor'] == "mozilla")
+                        if (webpg.utils.detectedBrowser.vendor === "mozilla")
                             node.setUserData("response", data, null);
                         else
                             webpg.jq(node).data("response", data);
@@ -992,20 +1199,20 @@ webpg.utils = {
                         return node.dispatchEvent(listener);
                     });
                 }, false);
-            } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
+            } else if (webpg.utils.detectedBrowser.product === "chrome") {
                 chrome.extension.onRequest.addListener(callback);
             }
             return false;
         },
 
         removeEventListener: function() {
-            if (webpg.utils.detectedBrowser['product'] == "safari" ||
-               (webpg.utils.detectedBrowser['vendor'] == "mozilla" &&
-               webpg.utils.detectedBrowser['product'] != "thunderbird")) {
+            if (webpg.utils.detectedBrowser.product === "safari" ||
+               (webpg.utils.detectedBrowser.vendor === "mozilla" &&
+               webpg.utils.detectedBrowser.product !== "thunderbird")) {
                 var mozDoc = (content) ? content.document : document;
                 mozDoc.removeEventListener("webpg-listener-query", arguments.callee, false);
             }
-        },
+        }
     },
 
 
@@ -1023,9 +1230,9 @@ webpg.utils = {
                 request - <json obj> A JSON object with parameters and data to send
         */
         sendRequest: function(target, request) {
-            if (webpg.utils.detectedBrowser['vendor'] == "mozilla" ||
-                webpg.utils.detectedBrowser['product'] == "safari") {
-                if (request.msg != "removeiframe" && request.msg != "resizeiframe" && request.msg != "insertIntoPrior") {
+            if (webpg.utils.detectedBrowser.vendor === "mozilla" ||
+                webpg.utils.detectedBrowser.product === "safari") {
+                if (request.msg !== "removeiframe" && request.msg !== "resizeiframe" && request.msg !== "insertIntoPrior") {
                     webpg.utils.sendRequest(request);
                 } else {
                     var iframe = webpg.utils.getFrameById(request.target_id);
@@ -1036,26 +1243,26 @@ webpg.utils = {
                         }, false);
                     }
                 }
-            } else if (webpg.utils.detectedBrowser['vendor'] == "opera") {
+            } else if (webpg.utils.detectedBrowser.vendor === "opera") {
                 data = {
                     "msg": "emit_event",
                     "event": "message",
                     "request": request
-                },
+                };
                 opera.extension.broadcastMessage(data);
-            } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
+            } else if (webpg.utils.detectedBrowser.product === "chrome") {
                 chrome.tabs.sendRequest(target.id, request);
             }
         },
 
         pageAction: {
             setPopup: function(popupData) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     chrome.pageAction.setPopup(popupData);
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     var popup = document.getElementById("webpg-pageAction-popup");
                     var frameSource = webpg.utils.resourcePath + popupData.popup;
-        		    var dialogFrame = document.getElementById('webpg-pageAction-popup-frame');
+                    var dialogFrame = document.getElementById('webpg-pageAction-popup-frame');
                     var browserWindow = webpg.utils.mozilla.getChromeWindow();
 		            dialogFrame.addEventListener("load", function() {
 		                dialogFrame.removeEventListener("load", arguments.callee, false);
@@ -1068,59 +1275,59 @@ webpg.utils = {
             },
 
             setIcon: function(popupData) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     chrome.pageAction.setIcon(popupData);
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     var pageActionIcon = document.getElementById("webpg-pageAction-icon");
                     pageActionIcon.setAttribute('src', webpg.utils.resourcePath + popupData.path);
                 }
             },
 
             show: function(popupData) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     chrome.pageAction.show(popupData);
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     var icon = document.getElementById("webpg-pageAction-icon");
                     icon.setAttribute("collapsed", false);
                 }
             },
 
             hide: function(popupData) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     chrome.pageAction.hide(popupData.tabId);
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     var icon = document.getElementById("webpg-pageAction-icon");
                     icon.setAttribute("collapsed", true);
                 }
             },
 
             showPopup: function(popupData) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     chrome.pageAction.show(popupData);
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     var popup = document.getElementById("webpg-pageAction-popup");
                     popup.openPopup(document.getElementById("webpg-pageAction-icon"), "after_end", 1, 4, false, false);
                 }
             },
 
             closePopup: function(popup) {
-                if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+                if (webpg.utils.detectedBrowser.product === 'chrome') {
                     popup.close();
-                } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+                } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                     popup.hidePopup();
                 }
             },
 
             toggle: function(popupData) {
 //                document.
-            },
+            }
 
         },
 
         getSelectedTab: function(tab, callback) {
-            if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            if (webpg.utils.detectedBrowser.product === 'chrome') {
                 chrome.tabs.getSelected(tab, callback);
-            } else if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+            } else if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                 if (!gBrowser) {
                     webpg.utils.mozilla.getChromeWindow().gBrowser;
                 }
@@ -1130,9 +1337,9 @@ webpg.utils = {
         },
 
         executeScript: function(tabID, code) {
-            if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            if (webpg.utils.detectedBrowser.product === 'chrome') {
                 chrome.tabs.executeScript(tabID, {'code': code});
-            } else if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
+            } else if (webpg.utils.detectedBrowser.vendor === "mozilla") {
                 code();
             }
         }
@@ -1152,12 +1359,12 @@ webpg.utils = {
                 callback - <func> A function to execute when completed.
         */
         removeAll: function(callback) {
-            if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
+            if (webpg.utils.detectedBrowser.vendor === "mozilla") {
                 webpg.jq(".context-menu-item").each(function(iter, element) {
                     element.hidden = true;
                 });
                 callback();
-            } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
+            } else if (webpg.utils.detectedBrowser.product === "chrome") {
                 chrome.contextMenus.removeAll(callback);
             }
         },
@@ -1170,15 +1377,17 @@ webpg.utils = {
                 action - <int> The webpg.constants.overlayAction to add
         */
         add: function(action) {
-            var _ = webpg.utils.i18n.gettext;
+            var _ = webpg.utils.i18n.gettext,
+                item,
+                id;
             switch (action) {
                 case webpg.constants.overlayActions.VERIF:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-verif");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-verif");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-verify";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-verify";
                         chrome.contextMenus.create({
                             "title" : _("Verify this text"),
                             "contexts" : ["selection", "editable"],
@@ -1187,7 +1396,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1195,12 +1404,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.DECRYPT:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-decrypt");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-decrypt");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-decrypt";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-decrypt";
                         chrome.contextMenus.create({
                             "title" : _("Decrypt this text"),
                             "contexts" : ["selection", "editable"],
@@ -1209,7 +1418,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1217,12 +1426,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.IMPORT:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-import");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-import");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-import";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-import";
                         chrome.contextMenus.create({
                             "title" : _("Import this Key"),
                             "contexts" : ["selection", "editable"],
@@ -1231,7 +1440,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1239,12 +1448,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.PSIGN:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-sign");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-sign");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-clearsign";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-clearsign";
                         chrome.contextMenus.create({
                             "title" : _("Clear-sign this text"),
                             "contexts" : ["selection", "editable"],
@@ -1253,7 +1462,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1261,12 +1470,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.CRYPT:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-crypt");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-crypt");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-encrypt";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-encrypt";
                         chrome.contextMenus.create({
                             "title" : _("Encrypt this text"),
                             "contexts" : ["editable", "selection"],
@@ -1275,7 +1484,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1283,12 +1492,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.EXPORT:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-export");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-export");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-insert-pubkey";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-insert-pubkey";
                         chrome.contextMenus.create({
                             "title" : _("Paste Public Key"),
                             "contexts" : ["editable", "frame", "selection"],
@@ -1297,7 +1506,7 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
                             }
                         });
@@ -1305,12 +1514,12 @@ webpg.utils = {
                     break;
 
                 case webpg.constants.overlayActions.OPTS:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-options");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-options");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-separator";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-separator";
                         chrome.contextMenus.create({
                             "type" : "separator",
                             "contexts" : ["all", "page"],
@@ -1318,83 +1527,86 @@ webpg.utils = {
                                 webpg.utils.tabs.sendRequest(tab, {
                                     "msg": "onContextCommand",
                                     "action": action,
-                                    "source": 'context-menu',
+                                    "source": 'context-menu'
                                 });
-                            },
+                            }
                         });
-                        var id = "webpg-context-options";
+                        id = "webpg-context-options";
                         chrome.contextMenus.create({
                             "title" : _("Options"),
                             "type" : "normal",
                             "contexts" : ["all", "page"],
                             "onclick" : function(info, tab) {
                                 var url = "options.html";
-                                if (webpg.utils.detectedBrowser['product'] == "chrome")
-                                    url += "?auto_init=true"
+                                if (webpg.utils.detectedBrowser.product === "chrome")
+                                    url += "?auto_init=true";
                                 webpg.utils.openNewTab(webpg.utils.resourcePath + url);
-                            },
+                            }
                         });
                     }
                     break;
 
                 case webpg.constants.overlayActions.MANAGER:
-                    if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
-                        var item = document.querySelector(".webpg-menu-manager");
+                    if (webpg.utils.detectedBrowser.vendor === "mozilla") {
+                        item = document.querySelector(".webpg-menu-manager");
                         if (item)
                             item.hidden = false;
-                    } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
-                        var id = "webpg-context-manager";
+                    } else if (webpg.utils.detectedBrowser.product === "chrome") {
+                        id = "webpg-context-manager";
                         chrome.contextMenus.create({
                             "title" : _("Key Manager"),
                             "type" : "normal",
                             "contexts" : ["all", "page"],
                             "onclick" : function() {
                                 var url = "key_manager.html";
-                                if (webpg.utils.detectedBrowser['product'] == "chrome")
-                                    url += "?auto_init=true"
+                                if (webpg.utils.detectedBrowser.product === "chrome")
+                                    url += "?auto_init=true";
                                 webpg.utils.openNewTab(webpg.utils.resourcePath + url);
-                            },
+                            }
                         });
                     }
                     break;
             }
-        }, // end webpg.utils.contextMenus.add
+        } // end webpg.utils.contextMenus.add
     },
 
     i18n: {
         gettext: function(msg) {
-            if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
+            var res,
+                msgName,
+                m;
+            if (webpg.utils.detectedBrowser.vendor === "mozilla") {
                 // Get the reference to the browser window
                 var mainWindow = webpg.utils.mozilla.getChromeWindow();
                 var stringBundle = mainWindow.document.getElementById("webpg-strings");
-                var msgName = msg.replace("_", "--").replace(/[^\"|^_|^a-z|^A-Z|^0-9|^\.]/g, '_');
+                msgName = msg.replace("_", "--").replace(/[^\"|^_|^a-z|^A-Z|^0-9|^\.]/g, '_');
                 try {
-                    var res = stringBundle.getString(msgName);
+                    res = stringBundle.getString(msgName);
                 } catch (e) {
-                    var res = msg;
+                    res = msg;
                 }
-                if (!res || res.length == 0) {
+                if (!res || res.length === 0) {
                     // msg names that begin with a number, i.e. "90 days", they
                     //  are stored as "n90 days"; the following detects this
                     //  conversion and removes the preceeding "n".
-                    var m = /^[n]([0-9].*)/g.exec(msg);
-                    if (m && m.length == 2)
+                    m = /^[n]([0-9].*)/g.exec(msg);
+                    if (m && m.length === 2)
                         msg = m[1];
                     return msg;
                 } else {
                     return res;
                 }
-            } else if (webpg.utils.detectedBrowser['product'] == "chrome") {
+            } else if (webpg.utils.detectedBrowser.product === "chrome") {
                 if (!chrome.i18n)
                   return msg;
-                var msgName = msg.replace("_", "--").replace(/[^\"|^_|^a-z|^A-Z|^0-9]/g, '_');
+                msgName = msg.replace("_", "--").replace(/[^\"|^_|^a-z|^A-Z|^0-9]/g, '_');
                 var tmsg = chrome.i18n.getMessage(msgName);
-                if (tmsg.length == 0) {
+                if (tmsg.length === 0) {
                     // msg names that begin with a number, i.e. "90 days", they
                     //  are stored as "n90 days"; the following detects this
                     //  conversion and removes the preceeding "n".
-                    var m = /^[n]([0-9].*)/g.exec(msg);
-                    if (m && m.length == 2)
+                    m = /^[n]([0-9].*)/g.exec(msg);
+                    if (m && m.length === 2)
                         msg = m[1];
                     return msg;
                 } else {
@@ -1404,12 +1616,12 @@ webpg.utils = {
                 // msg names that begin with a number, i.e. "90 days", they
                 //  are stored as "n90 days"; the following detects this
                 //  conversion and removes the preceeding "n".
-                var m = /^[n]([0-9].*)/g.exec(msg);
-                if (m && m.length == 2)
+                m = /^[n]([0-9].*)/g.exec(msg);
+                if (m && m.length === 2)
                     msg = m[1];
                 return msg;
             }
-        },
+        }
     },
 
     mozilla: {
@@ -1425,13 +1637,13 @@ webpg.utils = {
             if (!mainWindow) {
                 var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                        .getService(Components.interfaces.nsIWindowMediator);
-                var winType = (webpg.utils.detectedBrowser['product'] == "thunderbird") ?
+                var winType = (webpg.utils.detectedBrowser.product === "thunderbird") ?
                     "mail:3pane" : "navigator:browser";
-                var mainWindow = wm.getMostRecentWindow(winType);
+                mainWindow = wm.getMostRecentWindow(winType);
             }
 
             return mainWindow;
-        },
+        }
     },
 
     extension: {
@@ -1473,14 +1685,14 @@ webpg.utils = {
                 }
             }
         }
-        
+
     },
 
     tabListener: {
         add: function(openListener, closeListener) {
-            if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
-                if (!gBrowser) {
-                    var gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
+            if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
+                if (gBrowser===undefined) {
+                    gBrowser = webpg.utils.mozilla.getChromeWindow().gBrowser;
                 }
 
                 if (!gBrowser)
@@ -1490,7 +1702,7 @@ webpg.utils = {
                 container.addEventListener("TabOpen", webpg.utils.tabListener.openListener, false);
                 //container.addEventListener("TabSelect", webpg.utils.tabListener.selectListener, false);
                 container.addEventListener("TabClose", webpg.utils.tabListener.closeListener, false);
-            } else if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            } else if (webpg.utils.detectedBrowser.product === 'chrome') {
                 chrome.tabs.onCreated.addListener(webpg.utils.tabListener.openListener);
                 //chrome.tabs.onActivated.addListener(webpg.utils.tabListener.selectListener);
                 chrome.tabs.onRemoved.addListener(webpg.utils.tabListener.closeListener);
@@ -1498,35 +1710,35 @@ webpg.utils = {
         },
 
         openListener: function(event) {
-            if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+            if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                 var browser = gBrowser.getBrowserForTab(event.target);
                 browser._webpgTabID = ++webpg.background.tabIndex;
-            } else if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            } else if (webpg.utils.detectedBrowser.product === 'chrome') {
                 if (this.debug) console.log("opened a new tab with id:", event.id);
             }
         },
 
         selectListener: function(event) {
-            if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+            if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                 var browser = gBrowser.getBrowserForTab(event.target);
                 if (this.debug) console.log("checking for headers in tab: " + browser._webpgTabID);
                 if (browser._webpgDisplayAction)
                     webpg.utils.tabs.pageAction.show({'tabId': browser._webpgTabID});
                 else
                     webpg.utils.tabs.pageAction.hide({'tabId': browser._webpgTabID});
-            } else if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            } else if (webpg.utils.detectedBrowser.product === 'chrome') {
                 if (this.debug) console.log("a tab has been selected with tab id:", event.tabId);
             }
         },
 
         closeListener: function(event) {
-            if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+            if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
                 var browser = gBrowser.getBrowserForTab(event.target);
                 if (this.debug) console.log("closing tab with id: " + browser._webpgTabID);
-            } else if (webpg.utils.detectedBrowser['product'] == 'chrome') {
+            } else if (webpg.utils.detectedBrowser.product === 'chrome') {
                 if (this.debug) console.log("a tab has been closed with tab id:", event);
             }
-        },
+        }
     },
 
     keylistTextSearch: function(val, keylist) {
@@ -1536,13 +1748,16 @@ webpg.utils = {
                 replace(/\*/g, "\.*?");
         // Create an empty object that will hold the keys matching
         //  the search string
-        var searchResults = {}
+        var searchResults = {},
+            searchStrs, // Plural
+            searchStr, // Singular
+            locate;
         // Determine if this is a compound search
-        var compound = (val.search("&&") > -1)
+        var compound = (val.search("&&") > -1);
         if (compound)
-            var searchStrs = val.split(" && ");
+            searchStrs = val.split(" && ");
         else
-            var searchStrs = val.split(" & ");
+            searchStrs = val.split(" & ");
         // Iterate through the keys in the keylist to preform
         //  our search
         for (var key in keylist) {
@@ -1557,7 +1772,7 @@ webpg.utils = {
                 //  were located
                 var allfound = true;
                 // Iterate through each of the search words.
-                for (var searchStr in searchStrs) {
+                for (searchStr in searchStrs) {
                     // Determine if this search word is a
                     //  property:value item
                     if (searchStrs[searchStr].search(":") > -1) {
@@ -1569,17 +1784,17 @@ webpg.utils = {
                     } else {
                         searchStrM = false;
                     }
-                    var locate = (searchStrM) ? searchStrM
+                    locate = (searchStrM) ? searchStrM
                         : searchStrs[searchStr];
-                    if (keyobjStr.search(locate) > -1
-                    || keyobjStr.search(locate.replace(":\"", ":")) > -1) {
+                    if (keyobjStr.search(locate) > -1 ||
+                    keyobjStr.search(locate.replace(":\"", ":")) > -1) {
                         allfound = false;
                     }
                 }
                 if (allfound)
                     searchResults[key] = keyobj;
             } else {
-                for (var searchStr in searchStrs) {
+                for (searchStr in searchStrs) {
                     if (searchStrs[searchStr].search(":") > -1) {
                         // Format the property:value search item
                         //  to a compatible format
@@ -1589,10 +1804,10 @@ webpg.utils = {
                     } else {
                         searchStrM = false;
                     }
-                    var locate = (searchStrM) ? searchStrM
+                    locate = (searchStrM) ? searchStrM
                         : searchStrs[searchStr];
-                    if (keyobjStr.search(locate) > -1
-                    || keyobjStr.search(locate.replace(":\"", ":")) > -1) {
+                    if (keyobjStr.search(locate) > -1 ||
+                    keyobjStr.search(locate.replace(":\"", ":")) > -1) {
                         searchResults[key] = keyobj;
                         break;
                     }
@@ -1610,19 +1825,21 @@ webpg.utils = {
         for (var i = 0; i < 4; i++)
             statusText += validchars.charAt(Math.floor(Math.random() * validchars.length));
 
-        return statusText
+        return statusText;
     },
 
     setStatusBarText: function(statusText) {
-        if (webpg.utils.detectedBrowser['vendor'] == 'mozilla') {
+        if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
             webpg.utils.sendRequest({'msg': 'updateStatusBar', 'statusText': statusText});
-        } else if (webpg.utils.detectedBrowser['vendor'] == 'google') {
+        } else if (webpg.utils.detectedBrowser.vendor === 'google') {
             webpg.utils.sendRequest({"msg": "setBadgeText", "badgeText": statusText});
         }
     },
-}
 
-webpg.descript = function(html) { return html.replace(/\<script(.|\n)*?\>(.|\n)*?\<\/script\>/g, "") };
+};
+
+webpg.descript = function(html) { return html.replace(/\<script(.|\n)*?\>(.|\n)*?\<\/script\>/g, ""); };
 
 webpg.utils.init();
+
 /* ]]> */

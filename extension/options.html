@@ -2,9 +2,9 @@
 <head>
 <title>WebPG Options</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<link type="text/css" href="jquery/css/dot-luv/jquery-ui-1.8.22.custom.css" rel="stylesheet"/>
-<script type="text/javascript" src="jquery/js/jquery-1.10.2.min.js"></script>
-<script type="text/javascript" src="jquery/js/jquery-ui-1.8.22.custom.min.js"></script>
+<link type="text/css" href="resources/jquery/css/dot-luv/jquery-ui-1.10.3.custom.css" rel="stylesheet"/>
+<script type="text/javascript" src="resources/jquery/js/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="resources/jquery/js/jquery-ui-1.10.3.custom.min.js"></script>
 <script type="text/javascript" src="jquery/js/URI.js"></script>
 <script type="text/javascript" src="constants.js"></script>
 <script type="text/javascript" src="utils.js"></script>
@@ -13,6 +13,7 @@
 <script type="text/javascript" src="xoauth2.js"></script>
 <script type="text/javascript" src="inline.js"></script>
 <script type="text/javascript" src="webpg_overlay.js"></script>
+<script type="text/javascript" src="buttonbar.js"></script>
 <style>
 body{
     font:62.5% "Trebuchet MS", sans-serif;
@@ -23,6 +24,28 @@ body{
 }
 .ui-tabs .ui-tabs-hide {
      display:none;
+}
+#webpg-buttonbar {
+  margin: 0 0 0 30px;
+  padding: 0 2px 0 4px;
+  display:inline-block;
+  background-color:transparent;
+  border:none;
+  background-image:none;
+  position:absolute;
+  top:6px;
+}
+#webpg-buttonbar button {
+  padding-right:4px;
+}
+/* support: IE7 */
+*+html #webpg-buttonbar {
+  display: inline;
+}
+#webpg-buttonbar button>.ui-button-text {
+  height:14px;
+  margin-right:-2px;
+  padding-right:0;
 }
 .ui-add-hover, .ui-add-hover option {
     cursor:pointer;
@@ -35,7 +58,6 @@ body{
     padding-top:16px;
     display:inline-block;
 }
-
 .bound-box p {
     color:#fff;
 }
@@ -125,7 +147,7 @@ body{
     color:#fff;
 }
 .webpg-options-title {
-    font-size:24px;
+    font-size:22px;
 }
 .webpg-options-img {
     float:left;
@@ -184,6 +206,12 @@ body{
     <div class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all">
         <img class="webpg-options-img" src="skin/images/webpg-64.png"/>
         <span class="webpg-options-title">WebPG Options</span>
+        <span id="webpg-buttonbar" class="webpg-buttonbar ui-widget-header ui-corner-all">
+          <button id="genkeybutton"></button>
+          <button id="optionsbutton"></button>
+          <button id="aboutbutton"></button>
+          <button id="docsbutton"></button>
+        </span>
         <span class="webpg-info-version" id="webpg-info-version-string"></span>
     </div>
     <div id="step-1" style="text-align:center;">

@@ -15,7 +15,7 @@
       "dialog.html",
       "dialog.js",
       "skin/*",
-      "jquery/js/jquery-1.10.2.min.map"
+      "resources/jquery/js/jquery-1.10.2.min.map"
   ],
   "background": {
       "scripts": [
@@ -36,7 +36,6 @@
   },
   "permissions": [
        "<all_urls>",
-       "tabs",
        "notifications",
        "contextMenus",
        "webRequest",
@@ -46,8 +45,8 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "jquery/js/jquery-1.10.2.min.js",
-        "jquery/js/jquery-ui-1.10.3.custom.min.js",
+        "resources/jquery/js/jquery-1.10.2.min.js",
+        "resources/jquery/js/jquery-ui-1.10.3.custom.min.js",
         "constants.js",
         "utils.js",
         "inline.js",
@@ -59,8 +58,7 @@
     {
       "matches": [ "https://mail.google.com/*", "http://mail.google.com/*" ],
       "js": [
-        "xoauth2.js",
-        "gmail.js"
+        "webmail/gmail/gmail.js"
       ],
       "css": ["skin/gmail_overlay.css"],
       "run_at": "document_end",
@@ -73,7 +71,7 @@
     "default_popup": "browser_action_menu.html"
   },
   "plugins": [
-      { "path": "plugins/Darwin_x86-gcc/npwebpg-ext-v0.6.5-Darwin_x86_64-gcc.plugin", "public": false },
+      { "path": "plugins/Darwin_x86-gcc/npwebpg-ext-v0.7.0-Darwin_x86_64-gcc.plugin", "public": false },
       { "path": "plugins/Linux_x86_64-gcc/npwebpg-ext-v0.7.0-Linux_x86_64-gcc.so", "public": false },
       { "path": "plugins/Linux_x86-gcc/npwebpg-ext-v0.7.0-Linux_x86-gcc.so", "public": false },
       { "path": "plugins/WINNT_x86-msvc/npwebpg-ext-v0.7.0-WINNT_x86-msvc.dll", "public": false }

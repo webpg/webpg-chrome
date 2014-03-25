@@ -40,7 +40,7 @@ webpg.preferences = {
         */
         set: function(value) {
             webpg.localStorage.setItem('enabled', value);
-        },
+        }
     },
 
     /*
@@ -54,7 +54,7 @@ webpg.preferences = {
         */
         get: function() {
             var value = webpg.localStorage.getItem('decorate_inline');
-            return (value == null) ? "true" : value;
+            return (value === null) ? "true" : value;
         },
 
         /*
@@ -73,9 +73,9 @@ webpg.preferences = {
                 webpg.localStorage.setItem('decorate_mode', value);
             } else {
                 var mode = webpg.localStorage.getItem('decorate_mode');
-                return (mode == null || mode == -1) ? "window" : mode;
+                return (mode === null || mode === -1) ? "window" : mode;
             }
-        },
+        }
     },
 
     render_toolbar: {
@@ -85,7 +85,7 @@ webpg.preferences = {
         */
         get: function() {
             var value = webpg.localStorage.getItem('render_toolbar');
-            return (value == null) ? true : value;
+            return (value === null) ? true : value;
         },
 
         /*
@@ -97,7 +97,7 @@ webpg.preferences = {
         */
         set: function(value) {
             webpg.localStorage.setItem('render_toolbar', value);
-        },
+        }
     },
 
     /*
@@ -123,7 +123,7 @@ webpg.preferences = {
         */
         set: function(value) {
             webpg.localStorage.setItem('gmail_integration', value);
-        },
+        }
     },
 
     /*
@@ -156,7 +156,7 @@ webpg.preferences = {
         */
         set: function(value) {
             webpg.localStorage.setItem('sign_gmail', value);
-        },
+        }
     },
 
     /*
@@ -169,9 +169,15 @@ webpg.preferences = {
                 Provides method to get the preference item
         */
         get: function() {
-            encrypt_to = webpg.plugin.gpgGetPreference('encrypt-to').value
-            default_key = webpg.plugin.gpgGetPreference('default-key').value
-            return (default_key != "" && encrypt_to == default_key) ? true : false;
+            try {
+                var encrypt_to = webpg.plugin.gpgGetPreference('encrypt-to').value;
+                var default_key = webpg.plugin.gpgGetPreference('default-key').value;
+                var encrypt_to_self = (default_key !== "" && encrypt_to === default_key) ? 'true' : 'false';
+                webpg.localStorage.setItem('encrypt_to_self', encrypt_to_self);
+                return encypt_to_self;
+            } catch (e) {
+                return webpg.localStorage.getItem('encrypt_to_self');
+            }
         },
 
         /*
@@ -186,10 +192,10 @@ webpg.preferences = {
             if (!value) {
                 webpg.plugin.gpgSetPreference('encrypt-to', 'blank');
             } else {
-                default_key = webpg.preferences.default_key.get();
+                var default_key = webpg.preferences.default_key.get();
                 webpg.plugin.gpgSetPreference('encrypt-to', default_key);
             }
-        },
+        }
     },
 
     /*
@@ -235,7 +241,7 @@ webpg.preferences = {
                 webpg.background.init();
             webpg.plugin = (webpg.plugin.valid) ? webpg.plugin :
                 webpg.background.webpg.plugin;
-        },
+        }
     },
 
     /*
@@ -281,7 +287,7 @@ webpg.preferences = {
                 webpg.background.init();
             webpg.plugin = (webpg.plugin.valid) ? webpg.plugin :
                 webpg.background.webpg.plugin;
-        },
+        }
     },
 
     /*
@@ -327,7 +333,7 @@ webpg.preferences = {
                 webpg.background.init();
             webpg.plugin = (webpg.plugin.valid) ? webpg.plugin :
                 webpg.background.webpg.plugin;
-        },
+        }
     },
 
     /*
@@ -367,7 +373,7 @@ webpg.preferences = {
         remove: function(keyid) {
             var keys_tmp = this.get();
             var keys_arr = [];
-            for (key in keys_tmp) {
+            for (var key in keys_tmp) {
                 if (keys_tmp[key] != keyid) {
                     keys_arr.push(keys_tmp[key]);
                 }
@@ -405,7 +411,7 @@ webpg.preferences = {
                     return true;
             }
             return false;
-        },
+        }
     },
 
     /*
@@ -418,7 +424,7 @@ webpg.preferences = {
                 Provides method to get the preference item
         */
         get: function() {
-            return webpg.plugin.gpgGetPreference('default-key').value
+            return webpg.plugin.gpgGetPreference('default-key').value;
         },
 
         /*
@@ -441,7 +447,7 @@ webpg.preferences = {
         */
         clear: function() {
             webpg.plugin.gpgSetPreference('default-key', 'blank');
-        },
+        }
     },
 
     /*
@@ -496,9 +502,9 @@ webpg.preferences = {
             // Get the currently defined group object (if any) and convert it
             //  to an object
             var groups = webpg.localStorage.getItem('groups');
-            var groups = (groups && groups.length > 1) ? JSON.parse(groups) : {};
+            groups = (groups && groups.length > 1) ? JSON.parse(groups) : {};
             
-            groups = (groups != null) ? groups : {};
+            groups = (groups !== null) ? groups : {};
 
             // Check if the groups object contains the named group, if not
             //  create it
@@ -537,7 +543,7 @@ webpg.preferences = {
             //  to an object
             var groups = JSON.parse(webpg.localStorage.getItem('groups'));
 
-            groups = (groups != null) ? groups : {};
+            groups = (groups !== null) ? groups : {};
 
             // Check if the groups object contains the named group, if not
             //  create it
@@ -593,6 +599,38 @@ webpg.preferences = {
             return { 'error': false, 'group': group, 'modified': true};
         },
 
+        delete_group: function(group) {
+          var gpg_groups = webpg.plugin.gpgGetPreference("group");
+          if (gpg_groups.value !== undefined)
+            groups = gpg_groups.value.split(", ");
+          else
+            return false;
+
+          // Clear all the groups, and we will add them back without the group
+          //  specified.
+          webpg.plugin.gpgSetPreference("group", "");
+
+          for (var rgroup in groups) {
+            // Break out the group name it's values
+            groups[rgroup].replace(
+              new RegExp("([^?=&]+)(=([^&]*))?", "g"),
+              function($0, $1, $2, $3) {
+                // Set the new group value
+                if ($1.trim() !== group)
+                  webpg.plugin.gpgSetGroup($1.trim(), $3.trim());
+                else
+                  console.log("Removed '" + $1.trim() + "' from gpg.conf");
+              }
+            );
+          }
+          groups = JSON.parse(webpg.localStorage.getItem("groups"));
+          if (groups.hasOwnProperty(group)) {
+            delete groups[group];
+            webpg.localStorage.setItem("groups", JSON.stringify(groups));
+            console.log("Removed '" + group + "' from localStorage");
+          }
+        },
+
         /*
             Function: refresh_from_config
                 Provides method to retrieve the group item(s) in gpg.conf
@@ -602,7 +640,7 @@ webpg.preferences = {
                 var groups = webpg.plugin.gpgGetPreference("group").value.split(", ");
                 var groups_json = {};
                 for (var rgroup in groups) {
-                    if (groups[rgroup] == "")
+                    if (groups[rgroup] === "")
                         return;
                     var g_v = groups[rgroup].split(" = ");
                     if (g_v.length > 1)
@@ -618,7 +656,7 @@ webpg.preferences = {
         */
         clear: function() {
             webpg.localStorage.setItem('groups', '');
-        },
+        }
     },
 
     /*
@@ -645,7 +683,7 @@ webpg.preferences = {
         */
         set: function(value) {
             webpg.localStorage.setItem('banner_version', value);
-        },
+        }
     },
 
     xoauth2_data: {
@@ -657,7 +695,7 @@ webpg.preferences = {
         set: function(data) {
             webpg.localStorage.setItem('xoauth2_data', JSON.stringify(data));
         }
-    },
+    }
 	
 	/*
         Class: webpg.preferences.site_exceptions
@@ -704,7 +742,7 @@ webpg.preferences = {
 
 };
 
-if (webpg.utils.detectedBrowser['product'] == "chrome") {
+if (webpg.utils.detectedBrowser.product === "chrome") {
     try {
         webpg.browserWindow = chrome.extension.getBackgroundPage();
     } catch (err) {
@@ -713,11 +751,11 @@ if (webpg.utils.detectedBrowser['product'] == "chrome") {
         webpg.browserWindow = null;
     }
     webpg.localStorage = window.localStorage;
-} else if (webpg.utils.detectedBrowser['product'] == "safari") {
+} else if (webpg.utils.detectedBrowser.product === "safari") {
     webpg.browserWindow = safari.extension.globalPage.contentWindow;
     webpg.localStorage = window.localStorage;
 // If this is Firefox, set up required objects
-} else if (webpg.utils.detectedBrowser['vendor'] == "mozilla") {
+} else if (webpg.utils.detectedBrowser.vendor === "mozilla") {
     webpg.browserWindow = webpg.utils.mozilla.getChromeWindow();
     // We are running on Mozilla, we need to set our localStorage object to
     //  use the 'mozilla.org/preference-service'
@@ -738,9 +776,9 @@ if (webpg.utils.detectedBrowser['product'] == "chrome") {
             return (prefType == 32) ? prefs.setCharPref(item, value) :
                    (prefType == 64) ? prefs.setIntPref(item, value) :
                    (prefType == 128) ? prefs.setBoolPref(item, value): -1;
-        },
-    }
-} else if (webpg.utils.detectedBrowser['vendor'] == "opera") {
+        }
+    };
+} else if (webpg.utils.detectedBrowser.vendor === "opera") {
     webpg.browserWindow = opera.extension.bgProcess;
     webpg.localStorage = window.localStorage;
 }

@@ -1,6 +1,27 @@
 /* <![CDATA[ */
 if (typeof(webpg)=='undefined') { webpg = {}; }
 
+webpg.globalTester = (function(){
+    var fields = {};
+    var before = function(w){
+        for(var field in w){
+            fields[field] = true;
+        };
+    };
+
+    var after = function(w){
+        for(var field in w){
+            if(!fields[field]){
+                 console.log(field + " has been added");
+            }
+        };
+
+    };
+    return {before: before, after:after};
+}());
+
+webpg.globalTester.before(window);
+
 /*
     Class: webpg.constants
         Holds all of the contant variables required between pages
@@ -8,12 +29,12 @@ if (typeof(webpg)=='undefined') { webpg = {}; }
 webpg.constants = {
 
     debug: {
-        LOG: false
+        LOG: true
     },
 
     /*
        Constants: ff_prefTypes - Mozilla preference value type
-       
+
         webpg.constants.ff_prefTypes.string - A string value
         webpg.constants.ff_prefTypes.number - A number value
         webpg.constants.ff_prefTypes.boolean - A bool value
@@ -26,7 +47,7 @@ webpg.constants = {
 
     /*
        Constants: overlayActions - Actions available to the overlay
-       
+
         webpg.constants.overlayActions.SIGN - 'SIGN'
         webpg.constants.overlayActions.PSIGN - 'PLAINSIGN'
         webpg.constants.overlayActions.WSIGN - 'WRAPSIGN'
@@ -56,12 +77,12 @@ webpg.constants = {
         MANAGER: 'MANAGER',
         OPTS: 'OPTS',
         EDITOR: 'EDITOR',
-        ABOUT: 'ABOUT',
+        ABOUT: 'ABOUT'
     },
 
     /*
        Constants: PGPTags - Types of PGP start and end tags
-       
+
         webpg.constants.PGPTags.PGP_DATA_BEGIN - The start of a PGP block
         webpg.constants.PGPTags.PGP_KEY_BEGIN - The start of a PGP Public Key block
         webpg.constants.PGPTags.PGP_KEY_END - The end of a PGP Public Key block
@@ -74,21 +95,21 @@ webpg.constants = {
         webpg.constants.PGPTags.PGP_ENCRYPTED_END - The end of a PGP Encrypted message block
     */
     PGPTags: {
-        PGP_DATA_BEGIN: "-----BEGIN PGP",
-	    PGP_KEY_BEGIN: "-----BEGIN PGP PUBLIC KEY BLOCK-----",
-	    PGP_KEY_END: "-----END PGP PUBLIC KEY BLOCK-----",
-	    PGP_PKEY_BEGIN: "-----BEGIN PGP PRIVATE KEY BLOCK-----",
-	    PGP_PKEY_END: "-----END PGP PRIVATE KEY BLOCK-----",
-	    PGP_SIGNED_MSG_BEGIN: "-----BEGIN PGP SIGNED MESSAGE-----",
-	    PGP_SIGNATURE_BEGIN: "-----BEGIN PGP SIGNATURE-----",
-	    PGP_SIGNATURE_END: "-----END PGP SIGNATURE-----",
-	    PGP_ENCRYPTED_BEGIN: "-----BEGIN PGP MESSAGE-----",
-	    PGP_ENCRYPTED_END: "-----END PGP MESSAGE-----"
+      PGP_DATA_BEGIN: "-----BEGIN PGP",
+      PGP_KEY_BEGIN: "-----BEGIN PGP PUBLIC KEY BLOCK-----",
+      PGP_KEY_END: "-----END PGP PUBLIC KEY BLOCK-----",
+      PGP_PKEY_BEGIN: "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+      PGP_PKEY_END: "-----END PGP PRIVATE KEY BLOCK-----",
+      PGP_SIGNED_MSG_BEGIN: "-----BEGIN PGP SIGNED MESSAGE-----",
+      PGP_SIGNATURE_BEGIN: "-----BEGIN PGP SIGNATURE-----",
+      PGP_SIGNATURE_END: "-----END PGP SIGNATURE-----",
+      PGP_ENCRYPTED_BEGIN: "-----BEGIN PGP MESSAGE-----",
+      PGP_ENCRYPTED_END: "-----END PGP MESSAGE-----"
     },
 
     /*
        Constants: PGPBlocks - Types of PGP blocks
-       
+
         webpg.constants.PGPBlocks.PGP_KEY - A PGP Public Key
         webpg.constants.PGPBlocks.PGP_PKEY - A PGP Private Key
         webpg.constants.PGPBlocks.PGP_SIGNED_MSG - A PGP Signed message
@@ -100,12 +121,12 @@ webpg.constants = {
         PGP_PKEY: 2,
         PGP_SIGNED_MSG: 3,
         PGP_SIGNATURE: 4,
-        PGP_ENCRYPTED: 5,
+        PGP_ENCRYPTED: 5
     },
 
     /*
        Constants: algoTypes - Types of key algorithms
-       
+
         webpg.constants.algoTypes.PGP_KEY - A PGP Public Key
         webpg.constants.algoTypes.RSA - RSA algorithm
         webpg.constants.algoTypes.DSA - DSA algorithm
@@ -114,7 +135,7 @@ webpg.constants = {
     algoTypes: {
         "RSA": "R",
         "DSA": "D",
-        "ELG-E": "g",
+        "ELG-E": "g"
     }
-}
+};
 /* ]]> */
