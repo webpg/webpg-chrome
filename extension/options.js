@@ -555,18 +555,35 @@ webpg.options = {
                 
                 // Site exceptions stuff
                 
-                /* webpg.jq("#site-whitelist-list").html(
+                webpg.jq("#site-whitelist-list").html(
                     '<option>' + webpg.preferences.site_exceptions.get().whitelist.join('</option><option>') + '</option>'
                 );
                 webpg.jq("#site-blacklist-list").html(
                     '<option>' + webpg.preferences.site_exceptions.get().blacklist.join('</option><option>') + '</option>'
-                ); */
+                );
                 
                 webpg.jq("#site-whitelist-add").click(function() {
                     var site_input = webpg.jq(this).siblings('input[type=text]');
                     if (site_input.val() != "") {
+                        // Validate before adding
 						var site_URI = new URI(site_input.val());
-                        webpg.preferences.site_exceptions.add('whitelist', site_input.val());
+                        if (site_URI.scheme().length == 0)
+                            site_URI.scheme('http');
+                        
+                        // At least path (eg google.com) and http(s) is expected of the URI
+                        if (site_URI.scheme() != "http" && site_URI.scheme() != "https")
+                        {
+                            alert('Invalid URI scheme');
+                            return;
+                        }
+                        
+                        if (site_URI.path().length == 0)
+                        {
+                            alert('Invalid URI');
+                            return;
+                        }
+                        
+                        webpg.preferences.site_exceptions.add('whitelist', site_URI.toString());
                         var site_exceptions = webpg.preferences.site_exceptions.get();
                         webpg.jq('#site-whitelist-list').html('<option>' + site_exceptions.whitelist.join('</option><option>') + '</option>');
                     }

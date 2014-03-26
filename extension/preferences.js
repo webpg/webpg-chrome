@@ -704,7 +704,8 @@ webpg.preferences = {
 	site_exceptions: {
         get: function() {
             var stored_data = webpg.localStorage.getItem('site_exceptions');
-            return (stored_data && stored_data.length > 1) ? JSON.parse(stored_data) : { whitelist: [], blacklist: [] };
+            var site_exceptions = webpg.utils.tryParseJSON(stored_data);
+            return (site_exceptions) ? site_exceptions : { whitelist: [], blacklist: [] };
         },
 		
 		add: function(type, site) {
@@ -720,7 +721,7 @@ webpg.preferences = {
 				alert("Code error in site_exceptions preference handler.");
 			}
 			
-			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(webpg.utils.unique(site_exceptions)));
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(site_exceptions));
 		},
 		
 		remove: function(type, site) {
@@ -736,7 +737,7 @@ webpg.preferences = {
 				alert("Code error in site_exceptions preference handler.");
 			}
 			
-			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(webpg.utils.unique(site_exceptions)));
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(site_exceptions));
 		},
     },
 

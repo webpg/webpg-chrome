@@ -187,6 +187,31 @@ webpg.utils = {
             'anchor': result[12]
         };
     },
+    
+    /*
+        Function: tryParseJSON
+            Returns an object containing parsed JSON, false otherwise
+
+        Parameters:
+            json - <str> The JSON to try and parse
+
+        Returns:
+            <obj> - An object of the parsed JSON (false on failure)
+    */
+    tryParseJSON: function(jsonString){
+        try {
+            var o = JSON.parse(jsonString);
+
+            // Handle non-exception-throwing cases:
+            //JSON.parse(null) returns 'null', and typeof null === "object"
+            if (o && typeof o === "object" && o !== null) {
+                return o;
+            }
+        }
+        catch (e) { }
+
+        return false;
+    },
 	
 	/*
 		Function: unique
