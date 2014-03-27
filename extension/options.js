@@ -18,14 +18,22 @@ webpg.options = {
             browserWindow - <window> The Window object housing firefoxOverlay.xul
             or thunderbirdOverlay.xul in Mozilla applications - not passed in Google Chrome
     */
-    init: function(browserWindow) {
+    init: function(browserWindow)
+    {
         var _ = webpg.utils.i18n.gettext;
         document.title = _("WebPG Options");
         document.dir = (webpg.utils.isRTL() ? 'rtl' : 'ltr');
         if (webpg.utils.detectedBrowser.vendor == "mozilla")
+        {
             webpg.plugin = browserWindow.webpg.plugin;
+        }
         else if (webpg.utils.detectedBrowser.product == "chrome")
+        {
             webpg.plugin = chrome.extension.getBackgroundPage().webpg.plugin;
+        }
+        
+        // jQuery UI elements
+        webpg.jq('#tabs').tabs();
 
         webpg.jq('#step-1').ready(function() {
             doSystemCheck();
@@ -41,7 +49,7 @@ webpg.options = {
             if (pf == "Win") {
                 platform = "-mswindows";
             }
-            if (pf == "Mac") {
+            else if (pf == "Mac") {
                 platform = "-macosx";
             }
             if (webpg.plugin && webpg.plugin.valid) {
@@ -177,26 +185,24 @@ webpg.options = {
                     webpg.xoauth2.requestCode();
                 });
 
-                webpg.jq("#advanced-options-link").text(_("Advanced Options"));
-
                 webpg.jq("#gnupg-path-select").find(".webpg-options-text").
                     text(_("GnuPG home directory"));
-
                 webpg.jq("#gnupg-path-select").find("input:button").val(_("Save"));
+                webpg.jq("#gnupg-path-input").attr('placeholder', '~/.gnupg');
 
                 webpg.jq("#gnupg-binary-select").find(".webpg-options-text").
-                    text(_("GnuPG binary") + " (i.e. /usr/bin/gpg)");
-
+                    text(_("GnuPG binary"));
+                webpg.jq("#gnupg-binary-input").attr('placeholder', '/usr/bin/gpg');
                 webpg.jq("#gnupg-binary-select").find("input:button").val(_("Save"));
 
                 webpg.jq("#gpgconf-binary-select").find(".webpg-options-text").
-                    text(_("GPGCONF binary") + " (i.e. /usr/bin/gpgconf)");
-
+                    text(_("GPGCONF binary"));
+                webpg.jq("#gpgconf-binary-input").attr('placeholder', '/usr/bin/gpgconf');
                 webpg.jq("#gpgconf-binary-select").find("input:button").val(_("Save"));
 
                 webpg.jq("#gnupg-keyserver-select").find(".webpg-options-text").
-                    text(_("Keyserver") + " (i.e. hkp://subkeys.pgp.net)");
-
+                    text(_("Keyserver"));
+                webpg.jq("#gnupg-keyserver-input").attr('placeholder', 'hkp://subkeys.pgp.net');
                 webpg.jq("#gnupg-keyserver-select").find("input:button").val(_("Save"));
 
                 webpg.jq("#system-good").find(".trust-desc").text(_("Your system appears to be configured correctly for WebPG"));
@@ -546,9 +552,79 @@ webpg.options = {
                 })[0].value = webpg.plugin.gpgGetPreference("keyserver").value;
 
                 webpg.jq("#gnupg-keyserver-input")[0].dir = "ltr";
-
-                webpg.jq("#advanced-options-link").click(function(e) {
-                    webpg.jq("#advanced-options").toggle("slide");
+                
+                // Site exceptions stuff
+                
+                webpg.jq("#site-whitelist-list").html(
+                    '<option>' + webpg.preferences.site_exceptions.get().whitelist.join('</option><option>') + '</option>'
+                );
+                webpg.jq("#site-blacklist-list").html(
+                    '<option>' + webpg.preferences.site_exceptions.get().blacklist.join('</option><option>') + '</option>'
+                );
+                
+                webpg.jq("input[name=site-filtering-mode]")
+                    .filter('[value=' + webpg.preferences.site_exceptions.mode() + ']')
+                    .attr('checked', 'checked');
+                
+                webpg.jq("input[name=site-filtering-mode]").change(function() {
+                    var filter_mode = webpg.jq("input[name=site-filtering-mode]:checked").val();
+                    webpg.preferences.site_exceptions.mode(filter_mode);
+                });
+                
+                webpg.jq("#site-whitelist-add").click(function() {
+                    var site_input = webpg.jq(this).siblings('input[type=text]');
+                    if (site_input.val() != "") {
+                        // Validate before adding
+						var site_URI = new URI(site_input.val());
+                        if (site_URI.scheme().length == 0)
+                            site_URI.scheme('http');
+                        
+                        // At least path (eg google.com) and http(s) is expected of the URI
+                        if (site_URI.scheme() != "http" && site_URI.scheme() != "https")
+                        {
+                            alert('Invalid URI scheme');
+                            return;
+                        }
+                        
+                        if (site_URI.path().length == 0)
+                        {
+                            alert('Invalid URI');
+                            return;
+                        }
+                        
+                        webpg.preferences.site_exceptions.add('whitelist', site_URI.toString());
+                        var site_exceptions = webpg.preferences.site_exceptions.get();
+                        webpg.jq('#site-whitelist-list').html('<option>' + site_exceptions.whitelist.join('</option><option>') + '</option>');
+                    }
+					site_input.val('');
+					site_input.focus();
+                });
+                webpg.jq("#site-blacklist-add").click(function() {
+                    var site_input = webpg.jq(this).siblings('input[type=text]');
+                    if (site_input.val() != "") {
+                        webpg.preferences.site_exceptions.add('blacklist', site_input.val());
+                        var site_exceptions = webpg.preferences.site_exceptions.get();
+                        webpg.jq('#site-blacklist-list').html('<option>' + site_exceptions.blacklist.join('</option><option>') + '</option>');
+                    }
+					site_input.val('');
+					site_input.focus();
+                });
+				
+                webpg.jq("#site-whitelist-remove").click(function() {
+                    var sites = webpg.jq('#site-whitelist-list').val();
+                    webpg.jq.each(sites, function(index, site) {
+						webpg.preferences.site_exceptions.remove('whitelist', site);
+                        var site_exceptions = webpg.preferences.site_exceptions.get();
+                        webpg.jq('#site-whitelist-list').html('<option>' + site_exceptions.whitelist.join('</option><option>') + '</option>');
+					});
+                });
+                webpg.jq("#site-blacklist-remove").click(function() {
+                    var sites = webpg.jq('#site-blacklist-list').val();
+                    webpg.jq.each(sites, function(index, site) {
+						webpg.preferences.site_exceptions.remove('blacklist', site);
+                        var site_exceptions = webpg.preferences.site_exceptions.get();
+                        webpg.jq('#site-blacklist-list').html('<option>' + site_exceptions.blacklist.join('</option><option>') + '</option>');
+					});
                 });
             }
         }

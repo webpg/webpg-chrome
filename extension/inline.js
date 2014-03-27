@@ -47,7 +47,49 @@ webpg.inline = {
         if (doc.location && doc.location.pathname.substr(-4) === '.pdf')
             return false;
 
-        webpg.inline.PGPDataSearch(doc);
+        if (window.location.host === "mail.google.com" &&
+            webpg.utils.detectedBrowser.vendor !== "mozilla") { // Get the GLOBALS page variable
+          var globals_eventID = "webpg_globals_" + new Date().getTime();
+          document.addEventListener(globals_eventID, function(e) {
+            if (webpg.gmail !== undefined)
+              webpg.gmail.GLOBALS = e.detail;
+            document.removeEventListener(globals_eventID);
+          });
+          var actualCode = ["setTimeout(function() {",
+                            "if (typeof(GLOBALS) !== 'undefined')",
+                            "  document.dispatchEvent(",
+                            "    new CustomEvent('" + globals_eventID + "',",
+                            "      { detail: GLOBALS }));",
+                            "    },",
+                            "  0",
+                            ");"].join('\n');
+          var script = document.createElement('script');
+          script.textContent = actualCode;
+          (document.head||document.documentElement).appendChild(script);
+          script.parentNode.removeChild(script);
+
+          var view_eventID = "webpg_view_" + new Date().getTime();
+          document.addEventListener(view_eventID, function(e) {
+            if (webpg.gmail !== undefined)
+              webpg.gmail.VIEW_DATA = e.detail;
+            document.removeEventListener(view_eventID);
+          });
+          var actualCode = ["setTimeout(function() {",
+                            "if (typeof(VIEW_DATA) !== 'undefined')",
+                            "  document.dispatchEvent(",
+                            "    new CustomEvent('" + view_eventID + "',",
+                            "      { detail: VIEW_DATA }));",
+                            "    },",
+                            "  0",
+                            ");"].join('\n');
+          var script = document.createElement('script');
+          script.textContent = actualCode;
+          (document.head||document.documentElement).appendChild(script);
+          script.parentNode.removeChild(script);
+        }
+
+        if (window.location.host !== "mail.google.com")
+            webpg.inline.PGPDataSearch(doc);
 
         if (webpg.utils.detectedBrowser.product === 'thunderbird')
             return;
@@ -99,16 +141,16 @@ webpg.inline = {
                         } catch (err) {
                         }
                         // check if gmail message appears
-                        if (webpg.jq(mutation.target).parent().is('.ii.gt.adP.adO') ||
-                        webpg.jq(mutation.target).parent().is('.adn.ads')) {
-                            if (mutation.target.className.indexOf("webpg-") === -1 && 
-                            webpg.jq(mutation.target).find(".webpg-node-odata").length < 1) {
-                                if (webpg.jq(mutation.target).parent().is('.adn.ads'))
-                                    if (webpg.jq(mutation.target).find('.ii.gt.adP.adO').length < 1)
-                                        return false;
-                                webpg.inline.PGPDataSearch(doc, false, true, mutation.target);
-                            }
-                        }
+//                        if (webpg.jq(mutation.target).parent().is('.ii.gt.adP.adO') ||
+//                        webpg.jq(mutation.target).parent().is('.adn.ads')) {
+//                            if (mutation.target.className.indexOf("webpg-") === -1 &&
+//                            webpg.jq(mutation.target).find(".webpg-node-odata").length < 1) {
+//                                if (webpg.jq(mutation.target).parent().is('.adn.ads'))
+//                                    if (webpg.jq(mutation.target).find('.ii.gt.adP.adO').length < 1)
+//                                        return;
+//                                webpg.inline.PGPDataSearch(doc, false, true, mutation.target);
+//                            }
+//                        }
                     } else {
                         if (mutation.addedNodes.length > 0) {
                             if (mutation.addedNodes[0].textContent.search(/-----BEGIN PGP.*?-----/gim) > -1)
@@ -206,7 +248,7 @@ webpg.inline = {
             }
             return true;
         });
-
+        
         if (!proceed)
             return false;
 
@@ -248,13 +290,17 @@ webpg.inline = {
                     if (node.parentNode && node.parentNode.nodeName === 'PRE' &&
                     node.parentNode.parentNode &&
                     node.parentNode.parentNode.parentNode &&
-                    typeof node.parentNode.parentNode.parentNode.getAttribute === 'function' && 
+                    typeof node.parentNode.parentNode.parentNode.getAttribute === 'function' &&
                     node.parentNode.parentNode.parentNode.getAttribute('id') === 'storeArea') {
                         // Possible TidyWiki document
                         var topwinjs = node.ownerDocument.defaultView.parent.wrappedJSObject;
                         if ("version" in topwinjs && topwinjs.version.title === "TiddlyWiki")
                             break; // It is, bail out
                     }
+
+                    if (doc.location.host === "mail.google.com" &&
+                        node.parentNode.getAttribute("role") === "textbox") // This is a reply or draft in GMAIL, don't parse
+                        break;
 
                     if (node.textContent.search(/^.*?(-----BEGIN PGP.*?).*?(-----)/gim) < 0 ||
                     !node.textContent.search(/^.*?(-----END PGP.*?).*?(-----)/gim) < 0)
@@ -265,7 +311,7 @@ webpg.inline = {
                         nodeRect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
                         nodeRect.left >= 0
                     );
-                    if (webpg.utils.detectedBrowser.product != "thunderbird" && 
+                    if (webpg.utils.detectedBrowser.product != "thunderbird" &&
                         !isInViewport)
                         break;
 
@@ -382,26 +428,32 @@ webpg.inline = {
             blockType - <int> The type of webpg.constants.PGPBlocks found
     */
     PGPBlockParse: function(range, node, blockType, gmail) {
+        var scontent,
+            phtml,
+            html,
+            msgObj,
+            displayData = '',
+            doc = (webpg.utils.detectedBrowser.vendor === 'mozilla') ? content.document :
+              (webpg.inline.doc) ? webpg.inline.doc : document;
+
         var s = new XMLSerializer(),
             d = range.cloneContents(),
             str = s.serializeToString(d),
             xmlnsReg = new RegExp(" xmlns=\"http://www.w3.org/1999/xhtml\"", "gi"),
             wbrReg = new RegExp("\<wbr\>", "gi"),
             phtml;
-        var doc = (webpg.utils.detectedBrowser.vendor === 'mozilla') ? content.document :
-            (webpg.inline.doc) ? webpg.inline.doc : document;
 
         str = str.replace(xmlnsReg, "");
         str = str.replace(wbrReg, "\n");
 
-        var html = node.parentNode.innerHTML;
+        html = node.parentNode.innerHTML;
 
         while (html.lastIndexOf("\n") + 1 === html.length) {
             html = html.substring(0, html.lastIndexOf("\n")).replace(wbrReg, "");
         }
 
-        var scontent = webpg.utils.getInnerText(node.parentNode);
-
+        var scontent = (webpg.utils.detectedBrowser.product === 'chrome') ?
+              webpg.jq(d).text() : webpg.utils.getInnerText(node.parentNode);
 //        if (scontent.search(/^\s*?(-----BEGIN PGP.*?)/gi) < 0)
 //            scontent = webpg.utils.clean(str);
 
@@ -541,11 +593,11 @@ webpg.inline = {
         originalNodeData.setAttribute("class", "webpg-node-odata");
         originalNodeData.setAttribute("style", "white-space: pre;");
         originalNodeData.setAttribute("id", "webpg-node-odata-" + results_frame.id);
-        originalNodeData.textContent = scontent;
+        originalNodeData.textContent = (displayData.length !== 0) ? displayData : scontent;
 
         range.insertNode(originalNodeData);
 
-        var posX = webpg.jq(originalNodeData).width() - 60;
+        var posX = webpg.jq(originalNodeData).width() + 20;
 
         var badge = webpg.inline.addElementBadge(doc, posX, results_frame.id, originalNodeData);
 
@@ -800,7 +852,7 @@ webpg.inline = {
                 });
                 webpg.jq("*[g_editable='true']").focus();
             }
-            webpg.jq('.webpg-subaction-btn .webpg-action-list-icon').css({ 'top': '0' });
+//            webpg.jq('.webpg-subaction-btn .webpg-action-list-icon').css({ 'top': '0' });
         }
         webpg.jq(toolbar).find('.webpg-action-list li').css({
             'border-style': 'solid', 'border-width': '1px',
@@ -984,7 +1036,7 @@ webpg.inline = {
 
         toolbar.setAttribute("style", "text-align:left; padding: 0; padding-right: 8px;" +
             "font: normal normal bold 11px arial,sans-serif; font-weight: bold; position:relative;" +
-            "background: #f1f1f1 url('" + webpg.utils.escape(webpg.utils.resourcePath) + 
+            "background: #f1f1f1 url('" + webpg.utils.escape(webpg.utils.resourcePath) +
             "skin/images/menumask.png') repeat-x; border-collapse: separate;" +
             "color:#444; height:24px; margin: 1px -1px 0 1px; display: block;" +
             "border: 1px solid gainsboro; top: 27px; clear: left; line-height: 12px;" +
@@ -1006,7 +1058,7 @@ webpg.inline = {
             toolbar.style.width = element.parentElement.offsetWidth + "px";
 
         element.style.width = parseInt(toolbar.style.width) + pad + offset + "px";
-        
+
         if (webpg.utils.detectedBrowser['product'] === 'mozilla')
           element.style.MozBoxSizing = "border-box !important";
         else
@@ -1142,8 +1194,8 @@ webpg.inline = {
         detectElementValue(element);
 
         function setActive(e) {
-            if (e.target && e.target.parentElement && 
-            (e.target.parentElement.className === "webpg-subaction-list" || 
+            if (e.target && e.target.parentElement &&
+            (e.target.parentElement.className === "webpg-subaction-list" ||
               (e.target.parentElement.parentElement &&
                 e.target.parentElement.parentElement.className === "webpg-subaction-list")))
                 return;
@@ -1318,7 +1370,7 @@ webpg.inline = {
                 (link_class === "webpg-toolbar-export") ?
                 webpg.constants.overlayActions.EXPORT :
                 (link_class === "webpg-toolbar-verify") ?
-                webpg.constants.overlayActions.VERIF : 
+                webpg.constants.overlayActions.VERIF :
                 (link_class === "webpg-toolbar-options-link") ?
                 webpg.constants.overlayActions.OPTS :
                 (link_class === "webpg-toolbar-keymanager-link") ?
@@ -1357,20 +1409,39 @@ webpg.inline = {
 
     },
 
-    addElementBadge: function(doc, posX, id, control) {
+    addElementBadge: function(doc, posX, id, control, scrollElement) {
 
         var badge = doc.createElement("span");
-        var posY = "-6";
+        var posY = control.offsetTop;
+
+        scrollElement = (scrollElement !== undefined) ? scrollElement :
+          webpg.jq(control).parent().attr('role') === 'document' ?
+          webpg.jq(control).parent().offsetParent().offsetParent() :
+            doc.defaultView;
+
+        webpg.jq(scrollElement).scroll(function(e) {
+          if (badge.style.display === "none")
+            return;
+
+          var pos = (scrollElement !== undefined) ?
+            webpg.jq(scrollElement).scrollTop() : badge.ownerDocument.defaultView.pageYOffset;
+
+          if (pos < (badge.parentElement.offsetTop +
+                     badge.parentElement.offsetHeight)) {
+            pos = (pos < badge.parentElement.offsetTop) ?
+                badge.parentElement.offsetTop : pos;
+            webpg.jq(badge).css({'top': pos});
+          }
+        });
 
         if (control.nodeName.toLowerCase() === "textarea") {
             posX = "-50";
-        } else {
-            posY = "-34";
         }
 
-        badge.setAttribute("style", "width:30px;" +
-            "display:inline-block;position:relative;top:" + posY + "px;left:" + posX + "px;" +
-            "padding:1px 2px 3px 0;border-radius: 70px; z-index:1;");
+        badge.setAttribute("style", "width:30px; display:inline-block;" +
+            "float:left; position:absolute; top:" + posY + "px;" +
+            "left:" + posX + "px;" + "padding:1px 2px 3px 0;" +
+            "border-radius:70px; z-index:1;");
         badge.setAttribute("id", "webpg-badge-toggle-" + id);
         badge.setAttribute("class", "webpg-badge-toggle");
 
@@ -1396,14 +1467,13 @@ webpg.inline = {
             webpg.jq(control).hide();
             webpg.jq(this).parent().hide();
             webpg.jq(this.ownerDocument.getElementById(target_id)).show();
-            if (webpg.inline.mode === "icon") {
-                webpg.utils.sendRequest({
-                    'msg': 'sendtoiframe',
-                    'msg_to_pass': 'resizeiframe',
-                    'target_id': target_id,
-                    'iframe_id': target_id
-                });
-            }
+            webpg.utils.sendRequest({
+                'msg': 'sendtoiframe',
+                'msg_to_pass': 'resizeiframe',
+                'target_id': target_id,
+                'iframe_id': target_id,
+                'scrollTop': true
+            });
         });
 
         return badge;
@@ -1450,7 +1520,10 @@ webpg.inline = {
                             parentNode = parentNode.parentNode;
                         }
                         webpg.jq(parentNode).find('.webpg-node-odata').toggle();
-                        webpg.jq(parentNode).find("#webpg-badge-toggle-" + iframe.id).toggle();
+                        webpg.jq(parentNode)
+                          .find("#webpg-badge-toggle-" + iframe.id)
+                            .toggle()
+                            .css({'top': parentNode.offsetTop + 'px'});
                         webpg.jq(iframe).toggle();
                     }
                 } catch (err) {
@@ -1471,7 +1544,10 @@ webpg.inline = {
             }
         });
         if (range) {
-            range.insertNode(iframe);
+            if (range.constructor.toString().search("Range") !== -1)
+              range.insertNode(iframe);
+            else // not a range...
+              range.appendChild(iframe);
             var theURL = webpg.utils.resourcePath + "webpg_results.html?id=" + id;
             if (webpg.utils.detectedBrowser.vendor === "mozilla")
                 iframe.contentWindow.location.href = theURL;

@@ -11,15 +11,19 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
     if (webpg.utils.detectedBrowser.vendor === "mozilla") {
       webpg.background = webpg.utils.mozilla.getChromeWindow();
       webpg.plugin = webpg.background.webpg.plugin;
-      webpg.public_keys = {};
-      webpg.secret_keys = webpg.plugin.getPrivateKeyList();
     } else if (webpg.utils.detectedBrowser.product === "chrome") {
       webpg.plugin = webpg.background.webpg.plugin;
-      webpg.public_keys = {};
-      webpg.secret_keys = webpg.plugin.getPrivateKeyList();
     }
+
+    webpg.secret_keycount = webpg.background.webpg.secret_keycount;
+    webpg.current_seckey = 0;
+    if (webpg.secret_keys === undefined)
+      webpg.secret_keys = {};
+    if (webpg.public_keys === undefined)
+      webpg.public_keys = {};
     webpg.default_key = webpg.preferences.default_key.get();
-    if (webpg.default_key !== null)
+
+    if (webpg.secret_keys.hasOwnProperty(webpg.default_key))
       webpg.secret_keys[webpg.default_key].default = true;
 
     if (webpg.utils.detectedBrowser.product === "chrome") {
@@ -31,7 +35,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
       });
     }
 
-    webpg.plugin.getPublicKeyList(true, true);
+    webpg.plugin.getPrivateKeyList(true, true);
 
     webpg.utils.extension.version(function(version) {
       webpg.jq("#webpg-info-version-string").text(
@@ -67,19 +71,46 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
       var data = (webpg.utils.detectedBrowser.vendor === "mozilla") ? evt.detail : evt;
       if (data.type == "key") {
         key = JSON.parse(data.data);
-        // Make the public part of secret keys appear as public keys
-        //  in the public keylist.
-        key.secret = false;
-        webpg.public_keys[key.id] = key;
-        webpg.public_scope.currentItem++;
-        if (webpg.public_scope.currentItem >= webpg.public_scope.itemsPerPage) {
-          webpg.public_scope.search(webpg.public_scope.currentPage);
-          webpg.public_scope.$apply();
-          webpg.public_scope.currentItem = 0;
+        if (key.secret === true) {
+          webpg.current_seckey++;
+          webpg.jq("#private_progressbar")
+            .progressbar({'value':(webpg.current_seckey/webpg.secret_keycount)*100})
+            .css({'display': 'inline-block', 'margin-right':'-200px'})
+            .find('.progress-label')
+              .text(_("Loading keys") + "... [" + key.id + "]");
+          if (webpg.default_key !== null && key.id === webpg.default_key)
+            key.default = true;
+          webpg.secret_keys[key.id] = key;
+//          webpg.private_scope.search(webpg.private_scope.currentPage);
+//          webpg.private_scope.$apply();
+        } else {
+          webpg.jq("#public_progressbar")
+            .progressbar({'value': Math.floor(Math.random() * 100)})
+            .css({'display': 'inline-block'})
+            .find('.progress-label')
+              .text(_("Loading keys") + "... [" + key.id + "]");
+          webpg.public_keys[key.id] = key;
+          webpg.public_scope.currentItem++;
+          if (webpg.public_scope.currentItem >= webpg.public_scope.itemsPerPage) {
+            webpg.public_scope.search(webpg.public_scope.currentPage);
+            webpg.public_scope.$apply();
+            webpg.public_scope.currentItem = 0;
+          }
         }
       } else {
         if (port)
           port.disconnect();
+        if (webpg.current_seckey/webpg.secret_keycount >= 1) {
+          webpg.jq("#private_progressbar").css({'display': 'none'});
+          webpg.current_seckey = 0;
+          webpg.seckeylist_built = true;
+        } else {
+          webpg.jq("#public_progressbar").css({'display': 'none'});
+          webpg.pubkeylist_built = true;
+        }
+        webpg.background.webpg.secret_keys = webpg.secret_keys;
+        webpg.private_scope.search(webpg.private_scope.currentPage);
+        webpg.private_scope.$apply();
         webpg.public_scope.search(webpg.public_scope.currentPage);
         webpg.public_scope.$apply();
       }
@@ -106,7 +137,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
           webpg.keymanager.genkey_refresh = true;
           webpg.keymanager.genkey_waiting = false;
           var gen_dialog = dialog + "-dialog";
-          var new_pkeylist = webpg.plugin.getPrivateKeyList();
+          var new_pkeylist = webpg.plugin.getPrivateKeyList(true);
           var generated_key = (dialog === "#gensubkey") ?
               webpg.jq(gen_dialog).find("#gensubkey-form")[0].key_id.value
                   : null;
@@ -126,12 +157,12 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
           webpg.jq(dialog + "-form")[0].style.display="inline-block";
           webpg.jq(dialog + "-dialog").dialog("destroy");
           webpg.private_scope.search(webpg.private_scope.currentPage);
-          webpg.private_scope.$apply();  
+          webpg.private_scope.$apply();
         } else if (data.search("failed") > -1) {
           webpg.keymanager.genkey_waiting = false;
           webpg.jq(dialog + "-status").html("Generation " +
             webpg.utils.escape(data));
-          webpg.jq(dialog + "-dialog").dialog("option", "buttons", [{ 
+          webpg.jq(dialog + "-dialog").dialog("option", "buttons", [{
             'text': _("Close"),
             'click': function() {
               if (dialog === "#gensubkey")
@@ -152,6 +183,8 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
     webpg.jq('#tab-privatekeys')
       .text(_("Private Keys"))
       .click(function() {
+        if (webpg.seckeylist_built !== true)
+          webpg.plugin.getPrivateKeyList(true, true);
         webpg.private_scope.search(webpg.private_scope.currentPage);
         webpg.private_scope.$apply();
       });
@@ -159,6 +192,8 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
     webpg.jq('#tab-publickeys')
       .text(_("Public Keys"))
       .click(function() {
+        if (webpg.pubkeylist_built !== true)
+          webpg.plugin.getPublicKeyList(true, true);
         webpg.public_scope.search(webpg.public_scope.currentPage);
         webpg.public_scope.$apply();
       });
@@ -271,6 +306,24 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
     webpg.jq('#keyexp-text').text(_("New Expiration Date") + ":");
     webpg.jq('#keyexp-never').button({"label": _("Never Expire")});
     webpg.jq('#keyexp-ondate').button({"label": _("Expiration Date")});
+
+    webpg.jq('ul.expand').each(function(){
+      webpg.jq('li.trigger', this).filter(':first').addClass('top').end().filter(':not(.open)').next().hide();
+      webpg.jq('li.trigger', this).click(function(){
+        var height = (webpg.jq("#genkey-status").length > 0) ? webpg.jq("#genkey-status").height() : 0;
+        if(webpg.jq(this).hasClass('open')) {
+          webpg.jq(this).removeClass('open').next().slideUp();
+          webpg.jq("#genkey-dialog").dialog("option", "minHeight", 300 + height);
+        } else {
+          webpg.jq(this).parent().find('li.trigger').removeClass('open').next().filter(':visible').slideUp();
+          webpg.jq(this).addClass('open').next().slideDown(300, function() {
+            webpg.jq("#genkey-dialog").dialog("option", "minHeight",
+              webpg.jq("#genkey-dialog")[0].scrollHeight + webpg.jq('li.trigger').parent().parent().innerHeight()
+            );
+          });
+        }
+      });
+    });
 
     webpg.keymanager.keyaction = function(e) {
       var params = webpg.jq(this).parent()[0].id.split('-'),
@@ -505,7 +558,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
           webpg.jq("#gensubkey-dialog").dialog({
             'resizable': true,
             'minHeight': 300,
-            'draggable': false,
+            'draggable': true,
             'width': 300,
             'modal': true,
             'autoOpen': false,
@@ -610,7 +663,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
           webpg.jq("#addphoto-dialog").dialog({
             'resizable': true,
             'height': 230,
-            'draggable': false,
+            'draggable': true,
             'width': 550,
             'modal': true,
             'buttons': [{
@@ -759,7 +812,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                 var desc = webpg.jq('#revkey-desc')[0].value;
                 var revkey_result = webpg.plugin.gpgRevokeKey(params[2],
                     parseInt(params[3], 10), parseInt(reason, 10), desc);
-                webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+                webpg.secret_keys = webpg.plugin.getPrivateKeyList(true, true);
                 webpg.private_scope.search(webpg.private_scope.currentPage);
                 webpg.private_scope.$apply();
                 webpg.jq("#revkey-confirm").dialog("close");
@@ -915,7 +968,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                         var revuid_result = webpg.plugin.gpgRevokeUID(params[2],
                             parseInt(params[3], 10) + 1, parseInt(reason, 10), desc);
                         if (params[1] === 'private') {
-                          webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+                          webpg.secret_keys = webpg.plugin.getPrivateKeyList(true, true);
                           webpg.private_scope.search(webpg.private_scope.currentPage);
                           webpg.private_scope.$apply();
                         }
@@ -1018,7 +1071,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                     } else {
                       refresh = true;
                       if (params[1] === 'private') {
-                        webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+                        webpg.secret_keys = webpg.plugin.getPrivateKeyList(true, true);
                         webpg.private_scope.search();
                         webpg.private_scope.$apply();
                       }
@@ -1059,7 +1112,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
       console.log(".*-key-option-button pressed..", params);
       if (refresh) {
         if (params[1] === 'private') {
-          webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+          webpg.secret_keys = webpg.plugin.getPrivateKeyList(true, true);
           webpg.private_scope.search(webpg.private_scope.currentPage);
           webpg.private_scope.$apply();
         } else {
@@ -1112,7 +1165,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                   return;
                 }
               });
-              
+
               if (!proceed)
                 continue;
 
@@ -1191,11 +1244,14 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
     return {
       restrict: 'A',
       link: function(scope, elm, attrs) {
-        var selected_tab = (webpg.keymanager.qs.tab && webpg.keymanager.qs.tab > -1) ? webpg.keymanager.qs.tab : 0,
+        var _ = webpg.utils.i18n.gettext,
+            selected_tab = (webpg.keymanager.qs.tab && webpg.keymanager.qs.tab > -1) ? webpg.keymanager.qs.tab : 0,
             selected_tab = parseInt(selected_tab, 10);
         scope.openkey = webpg.keymanager.qs.openkey;
         scope.opensubkey = parseInt(webpg.keymanager.qs.opensubkey, 10);
         webpg.jq(elm[0]).tabs({'active': selected_tab, 'selected': selected_tab});
+        if (selected_tab == 1)
+          webpg.plugin.getPublicKeyList(true, true);
       }
     };
   })
@@ -1274,7 +1330,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
 
           }
 
-          if (key.photos_provided > 0) {
+          if (key.photos_provided > 0 && webpg.jq(e.target).hasClass("photo") === false) {
             // When a primary key accordion header is clicked open, do the
             //  following mess to get the associated image(s).
             //  This would be a bit in depth for code comments, see the following
@@ -1321,7 +1377,8 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                   "echo :END>>!TEMP!\\", batch_name, " & ",
                   "echo   set /A \"POSITION=!PCOUNT!+!CUR!\">>!TEMP!\\", batch_name, " & ",
                   "echo   copy \"!BASEFILENAME!-latest.jpg\" \"!BASEFILENAME!-!CUR!-!POSITION!.j\"^>null>>!TEMP!\\", batch_name, " & ",
-                  "echo   IF !CUR! equ !INDEX! (>>!TEMP!\\", batch_name, " & ",
+                  "echo   set /A \"FIN=!CUR!+!INDEX!\">>!TEMP!\\", batch_name, " & ",
+                  "echo   IF !FIN! equ !PCOUNT! (>>!TEMP!\\", batch_name, " & ",
                   "echo     rename \"!BASEFILENAME!-*.j\" \"*.jpg\"^>null>>!TEMP!\\", batch_name, " & ",
                   "echo   )>>!TEMP!\\", batch_name, " & ",
                   "!TEMP!\\", batch_name, " \"", path, "\" ", index, " ", count, " \"%i\" %K & del /Q !TEMP!\\", batch_name);
@@ -1363,8 +1420,10 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                       'text': _("Delete this Photo"),
                       'click': function() {
                         // Delete the Photo
-                        var uid_idx = parseInt(params[3], 10);
+                        var uid_idx = parseInt(params[3], 10) +
+                          webpg.public_keys[params[2]].nuids + 1;
                         var result = webpg.plugin.gpgDeleteUID(params[2], uid_idx);
+                        console.log(result);
                         webpg.jq(this).dialog("close");
                         if (!result.error) {
                           if (params[1] === 'private') {
@@ -1388,12 +1447,13 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                     }
                   ]});
               });
+          }
 
+          if (key.photos_provided > 0) {
             webpg.jq(this).find('img.photo_img').each(function(e) {
               webpg.jq(this).attr('src',
                 '../skin/images/key_photos/' + scrub(this.parentElement.id.split('photo-')[1]) + '.jpg?' + new Date().getTime());
             });
-
           }
 
           scope.search();
@@ -1423,7 +1483,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                               };
 
         jqueryElm.accordion(subKeyAcOptions);
-        
+
         if (scope.openkey === scope.key.id && scope.opensubkey === scope.$index)
           jqueryElm.accordion({'active': 0});
 
@@ -1477,14 +1537,14 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
       replace: true,
       template: '\
           <span class="keylist-accordion">\
-            <h3 class="keylist" style="height:16px;" id="primary_{{key.secret? \'sec\' : \'pub\'}}key-{{key.id}}">\
+            <h3 class="keylist" style="height:16px;" id="primary_{{ktype? \'private\' : \'public\'}}key-{{key.id}}">\
               <a href="#" name="{{key.id}}">\
                 <span class="uid-line">[{{key.id.substr(-8)}}] {{key.name}}</span>\
                 <span>{{key.email}}</span>\
               </a>\
               <span class="trust" style="float:right;">\
                 <span class="keyoption-help-text">&nbsp;</span>\
-                <div class="private-key-buttons" ng-if="key.secret" ng-init="opt=secret"></div>\
+                <div class="private-key-buttons" ng-if="ktype===\'private\'" ng-init="opt=secret"></div>\
               </span>\
             </h3>\
             <div class="uidlist" id="{{key.id}}">\
@@ -1676,7 +1736,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
       template: "<span>" +
                   "<input class='enable-check' type='checkbox' name='enable-{{key.id}}' id='enable-{{key.id}}' ng-checked='!key.disabled' />" +
                   "<label class='enable-check' for='enable-{{key.id}}'>&nbsp;</label>" +
-                  "<input class='default-check' type='radio' name='default_check' id='default-{{key.id}}' ng-checked='key.default'/>" +
+                  "<input class='default-check' type='radio' name='default_check' id='default-{{key.id}}' ng-checked='key.default===true'/>" +
                   "<label class='default-check' for='default-{{key.id}}'>Set Default Key</label>" +
                 "</span>",
       link: function(scope, elm, attrs) {
@@ -2005,7 +2065,7 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
                             gpgDeleteUIDSign(params[2], parseInt(params[3], 10) + 1,
                             parseInt(params[4], 10) + 1);
                         if (params[1] === 'private') {
-                          webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+                          webpg.secret_keys = webpg.plugin.getPrivateKeyList(true, true);
                           webpg.private_scope.search(webpg.private_scope.currentPage);
                           webpg.private_scope.$apply();
                         }
@@ -2048,16 +2108,17 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
   .controller('keylistCtrl', ['$scope', '$filter', function($scope, $filter) {
     if ($scope.type === 'private') {
       $scope.ktype = 'private';
+      $scope.sortingOrder = ['default', 'name', 'email', 'id'];
       webpg.private_scope = $scope;
     } else if ($scope.type === 'public') {
       $scope.ktype = 'public';
+      $scope.sortingOrder = ['name', 'email', 'id'];
       webpg.public_scope = $scope;
       webpg.public_scope.currentItem = 0;
     }
 
-    $scope.public_list = Object.keys(webpg.public_keys);
+//    $scope.public_list = Object.keys(webpg.public_keys);
 
-    $scope.sortingOrder = '';
     $scope.reverse = false;
     $scope.filteredItems = [];
     $scope.groupedItems = [];
@@ -2080,16 +2141,11 @@ webpg.keymanager = angular.module("webpg.keymanager", [])
 
       if ($scope.ktype === 'private') {
         for(key in webpg.secret_keys) {
-          tkey = webpg.secret_keys[key];
-          tkey.secret = true;
           array.push(webpg.secret_keys[key]);
         }
       } else {
-        var tkey;
         for(key in webpg.public_keys) {
-          tkey = webpg.public_keys[key];
-          tkey.secret = false;
-          array.push(tkey);
+          array.push(webpg.public_keys[key]);
         }
       }
 

@@ -169,9 +169,15 @@ webpg.preferences = {
                 Provides method to get the preference item
         */
         get: function() {
-            var encrypt_to = webpg.plugin.gpgGetPreference('encrypt-to').value;
-            var default_key = webpg.plugin.gpgGetPreference('default-key').value;
-            return (default_key !== "" && encrypt_to === default_key) ? true : false;
+            try {
+                var encrypt_to = webpg.plugin.gpgGetPreference('encrypt-to').value;
+                var default_key = webpg.plugin.gpgGetPreference('default-key').value;
+                var encrypt_to_self = (default_key !== "" && encrypt_to === default_key) ? 'true' : 'false';
+                webpg.localStorage.setItem('encrypt_to_self', encrypt_to_self);
+                return encypt_to_self;
+            } catch (e) {
+                return webpg.localStorage.getItem('encrypt_to_self');
+            }
         },
 
         /*
@@ -689,7 +695,59 @@ webpg.preferences = {
         set: function(data) {
             webpg.localStorage.setItem('xoauth2_data', JSON.stringify(data));
         }
-    }
+    },
+	
+	/*
+        Class: webpg.preferences.site_exceptions
+            Provides methods to get/set the "site_exceptions" user white & blacklists.
+    */
+	site_exceptions: {
+        get: function() {
+            var stored_data = webpg.localStorage.getItem('site_exceptions');
+            var site_exceptions = webpg.utils.tryParseJSON(stored_data);
+            return (site_exceptions) ? site_exceptions : { whitelist: [], blacklist: [] };
+        },
+		
+		add: function(type, site) {
+			var site_exceptions = webpg.preferences.site_exceptions.get();
+			if (type == "whitelist") {
+				site_exceptions.whitelist.push(site);
+			}
+			else if (type == "blacklist") {
+				site_exceptions.blacklist.push(site);
+			}
+			else
+			{
+				alert("Code error in site_exceptions preference handler.");
+			}
+			
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(site_exceptions));
+		},
+		
+		remove: function(type, site) {
+			var site_exceptions = webpg.preferences.site_exceptions.get();
+			if (type == "whitelist") {
+				site_exceptions.whitelist.splice(webpg.jq.inArray(site, site_exceptions), 1);
+			}
+			else if (type == "blacklist") {
+				site_exceptions.blacklist.splice(webpg.jq.inArray(site, site_exceptions), 1);
+			}
+			else
+			{
+				alert("Code error in site_exceptions preference handler.");
+			}
+			
+			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(site_exceptions));
+		},
+        
+        mode: function(value) {
+            if (!value)
+                return webpg.localStorage.getItem('site_filtering_mode');
+                
+            return webpg.localStorage.setItem('site_filtering_mode', value);
+        }
+    },
+
 };
 
 if (webpg.utils.detectedBrowser.product === "chrome") {

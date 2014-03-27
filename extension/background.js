@@ -62,19 +62,21 @@ webpg.background = {
             if (webpg.plugin.webpg_status.openpgp_detected)
                 console.log("Protocol OpenPGP is valid; v" + webpg.plugin.webpg_status.OpenPGP.version);
             if (webpg.plugin.webpg_status.gpgconf_detected)
-                console.log("Protocol GPGCONF is valid; v" + webpg.plugin.webpg_status.GPGCONF.version); 
+                console.log("Protocol GPGCONF is valid; v" + webpg.plugin.webpg_status.GPGCONF.version);
             webpg.plugin.gpgSetHomeDir(gnupghome);
             webpg.plugin.addEventListener("keygenprogress", webpg.background.gpgGenKeyProgress, false);
             webpg.plugin.addEventListener("keygencomplete", webpg.background.gpgGenKeyComplete, false);
             webpg.plugin.addEventListener("statusprogress", webpg.background.keylistProgress, false);
 
-            /* Check to make sure all of the enabled_keys are private keys 
+            /* Check to make sure all of the enabled_keys are private keys
                 this would occur if the key was enabled and then the secret key was deleted. */
             webpg.default_key = webpg.preferences.default_key.get();
             webpg.public_keys = {};
-            webpg.secret_keys = webpg.plugin.getPrivateKeyList();
+            webpg.secret_keys = webpg.plugin.getPrivateKeyList(true);
+            webpg.secret_keycount = 0;
             webpg.preferences.enabled_keys.clear();
             for (var sKey in webpg.secret_keys) {
+                webpg.secret_keycount++;
                 if (webpg.secret_keys[sKey].disabled === false)
                     webpg.preferences.enabled_keys.add(sKey);
                 webpg.secret_keys[sKey].default = (sKey === webpg.default_key);
@@ -185,13 +187,16 @@ webpg.background = {
                     webpg.preferences.decorate_inline.get(),
                     'mode': webpg.preferences.decorate_inline.mode(),
                     'render_toolbar': (webpg.preferences.render_toolbar.get() === "true"),
+                    'filtering_mode': webpg.preferences.site_exceptions.mode(),
+                    'site_exceptions': webpg.preferences.site_exceptions.get(),
                 };
                 break;
 
             case 'gmail_integration':
                 response = {'gmail_integration':
                     webpg.preferences.gmail_integration.get(),
-                    'sign_gmail': webpg.preferences.sign_gmail.get()
+                    'sign_gmail': webpg.preferences.sign_gmail.get(),
+                    'encrypt_to_self': webpg.preferences.encrypt_to_self.get()
                 };
                 break;
 
@@ -204,7 +209,9 @@ webpg.background = {
                 break;
 
             case 'public_keylist':
-                response = webpg.plugin.getPublicKeyList();
+                webpg.background.keylist_tab = sender.tab.id;
+                webpg.background.requesting_iframe = request.iframe_id;
+                response = webpg.plugin.getPublicKeyList(request.fastlistmode, request.threaded);
                 break;
 
             case 'private_keylist':
@@ -216,7 +223,7 @@ webpg.background = {
                 if (typeof(sender)!=='undefined' && sender.tab) {
                     index = sender.tab.index;
                 } else {
-                    chrome.tabs.getSelected(null, function(tab) { 
+                    chrome.tabs.getSelected(null, function(tab) {
                         webpg.utils.openNewTab(request.url, tab.index);
                     });
                     break;
@@ -258,40 +265,47 @@ webpg.background = {
             case 'sign':
                 var signers = (typeof(request.signers)!=='undefined' &&
                         request.signers !== null &&
-                        request.signers.length > 0) ? request.signers : 
+                        request.signers.length > 0) ? request.signers :
                         webpg.preferences.default_key.get() !== "" ?
                             [webpg.preferences.default_key.get()] : [];
                 var sign_status = webpg.plugin.gpgSignText(request.selectionData.selectionText,
                     signers, 2);
                 response = sign_status;
+                console.log(request.selectionData.selectionText);
                 if (!sign_status.error && sign_status.data.length > 0) {
-                    if (typeof(request.message_event)==='undefined' || request.message_event !== "gmail") {
+                    if (typeof(request.message_event)==='undefined' ||
+                        request.message_event !== "gmail" ||
+                        request.message_event !== "roundcube") {
                         webpg.utils.tabs.sendRequest(sender.tab, {'msg': 'insertEncryptedData',
                             'data': sign_status.data,
-                            'pre_selection' : request.selectionData.pre_selection,
-                            'post_selection' : request.selectionData.post_selection,
+                            'pre_selection' : (request.selectionData.pre_selection || ""),
+                            'post_selection' : (request.selectionData.post_selection || ""),
                             "iframe_id": request.iframe_id});
                     }
                 }
                 break;
 
             case 'verify':
+                var content,
+                    plaintext = (request.plaintext!==undefined) ?
+                      request.plaintext : null;
                 if (request.data && request.data.length > 0) {
-                    var content = request.data;
+                    content = request.data.replace(/^([-]+)(?=[\r\n]|\s\n)/gm, '\\$1');
                     var lowerBlock = content.match(/(-----BEGIN PGP.*?)\n.*?\n\n/gim);
                     if (lowerBlock && lowerBlock.length > 1) {
-                        content.substr(0, content.indexOf(lowerBlock[1]) + lowerBlock[1].length) + 
+                        content.substr(0, content.indexOf(lowerBlock[1]) + lowerBlock[1].length) +
                             content.substr(content.indexOf(lowerBlock[1]) + lowerBlock[1].length, content.length).replace(/\n\n/gim, "\n");
                     }
                     request.data = content;
                 }
                 if (request.message_event && request.message_event === "context") {
-                    var content = (request.data) ? request.data :
+                    content = (request.data) ? request.data :
                         request.selectionData.selectionText;
-                    response = webpg.plugin.gpgVerify(content);
+                    content = content.replace(/^([-]+)(?=[\r\n]|\s\n)/gm, '\\$1');
+                    response = webpg.plugin.gpgVerify(content, plaintext);
                     response.original_text = content;
                 } else {
-                    response = webpg.plugin.gpgVerify(request.data);
+                    response = webpg.plugin.gpgVerify(request.data, plaintext);
                     response.original_text = request.data;
                 }
                 for (var sig in response.signatures) {
@@ -422,7 +436,7 @@ webpg.background = {
                     response = "";
                 }
                 if (typeof(request.message_event)==='undefined' ||
-                request.message_event !== "gmail" && 
+                request.message_event !== "gmail" &&
                 response && !response.error)
                     webpg.utils.tabs.sendRequest(sender.tab, {
                         "msg": "insertEncryptedData", "data": response.data,
@@ -483,7 +497,6 @@ webpg.background = {
                     for (var subkey in real_keyring_item.subkeys) {
                         var subkey_id = real_keyring_item.
                             subkeys[subkey].subkey;
-//                        console.log(response);
                         if (subkey_id === request.key_id) {
                             response.in_real_keyring = true;
                             response.real_keyring_item =
@@ -502,7 +515,7 @@ webpg.background = {
                     userKeys[users[u]] = [];
                     key = webpg.plugin.getNamedKey(users[u]);
                     if (JSON.stringify(key) !== "{}")
-                        userKeys[users[u]] = userKeys[users[u]].concat(key);
+                        userKeys[users[u]] = key;
                     // Pull keys by named group
                     var group_result = webpg.preferences.group.get(users[u]);
                     for (var group=0; group < group_result.length; group++) {
@@ -582,32 +595,45 @@ webpg.background = {
           var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                      .getService(Components.interfaces.nsIWindowMediator);
           var enumerator = wm.getEnumerator(null);
+          var win;
 
-          while(enumerator.hasMoreElements()) {
-              var win = enumerator.getNext().QueryInterface(
-                  Components.interfaces.nsIDOMChromeWindow
-              );
+          if (webpg.background.requesting_iframe !== undefined) {
+              win = webpg.utils.getFrameById(webpg.background.requesting_iframe);
+              var contentWindow = win.contentWindow;
+              var doc = win.contentDocument;
+          } else {
+              while(enumerator.hasMoreElements()) {
+                  var win = enumerator.getNext().QueryInterface(
+                      Components.interfaces.nsIDOMChromeWindow
+                  );
 
-              if (win.content && win.content.document.location.href.search(
-              "chrome://webpg-firefox/content/key_manager.html") > -1) {
-                  var contentWindow = win.content;
-                  var doc = win.content.document;
-
-                  // Attempt to remove the old listener
-                  try {
-                      doc.body.removeEventListener('gpgkeylistprogress', contentWindow.webpg.keymanager.keylistprogress);
-                  } catch (err) {
-                      // We don't really care if it didn't already exist
-                      console.log(err.message);
-                  } finally { 
-                      // Add the listener
-                      doc.body.addEventListener('gpgkeylistprogress', contentWindow.webpg.keymanager.keylistprogress);
+                  if (win.content && (win.content.document.location.href.search(
+                  "chrome://webpg-firefox/content/key_manager.html") > -1)) {
+                      var contentWindow = win.content;
+                      var doc = win.content.document;
+                      break;
                   }
-
-                  var evtObj = doc.createEvent('CustomEvent');
-                  evtObj.initCustomEvent("gpgkeylistprogress", true, true, {'type': msgType, 'data': data});
-                  doc.body.dispatchEvent(evtObj);
               }
+          }
+
+          if (data === '{"status": "complete"}')
+              delete webpg.background.requesting_iframe;
+
+          if (doc) {
+              // Attempt to remove the old listener
+              try {
+                  doc.body.removeEventListener('gpgkeylistprogress', contentWindow.webpg.keymanager.keylistprogress);
+              } catch (err) {
+                  // We don't really care if it didn't already exist
+                  console.log(err);
+              } finally {
+                  // Add the listener
+                  doc.body.addEventListener('gpgkeylistprogress', contentWindow.webpg.keymanager.keylistprogress);
+              }
+
+              var evtObj = doc.createEvent('CustomEvent');
+              evtObj.initCustomEvent("gpgkeylistprogress", true, true, {'type': msgType, 'data': data});
+              doc.body.dispatchEvent(evtObj);
           }
           delete data, evtObj;
       } else if (webpg.utils.detectedBrowser.product === "chrome") {
@@ -616,9 +642,16 @@ webpg.background = {
         } catch (e) {
           if (webpg.background.keylistProgressPort !== undefined)
             webpg.background.keylistProgressPort.disconnect();
-          webpg.background.keylistProgressPort = chrome.runtime.connect({name: "gpgKeyListProgress"});
+          if (webpg.background.keylist_tab !== undefined)
+            webpg.background.keylistProgressPort = chrome.tabs.connect(webpg.background.keylist_tab, {name: "gpgKeyListProgress"});
+          else
+            webpg.background.keylistProgressPort = chrome.runtime.connect({name: "gpgKeyListProgress"});
           webpg.background.keylistProgressPort.postMessage({"type": msgType, "data": data});
         }
+
+        if (data === '{"status": "complete"}')
+          delete webpg.background.keylist_tab;
+
         delete data;
       }
     },
@@ -653,7 +686,7 @@ webpg.background = {
                     } catch (err) {
                         // We don't really care if it didn't already exist
                         console.log(err.message);
-                    } finally { 
+                    } finally {
                         // Add the listener
                         doc.body.addEventListener('progress', contentWindow.webpg.keymanager.progressMsg);
                     }
