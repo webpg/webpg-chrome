@@ -275,6 +275,15 @@ body{
     </div>
     <div id="tab-filtering">
         <div id="site-exceptions">
+            <div id="filtering-activation">
+                <span class="webpg-options-text">Filtering Mode</span>
+                <label for="site-filtering-off">Off</label>
+                <input type="radio" id="site-filtering-off" name="site-filtering-mode" value="off" checked="checked" />
+                <label for="site-filtering-allow-deny">Blacklisting</label>
+                <input type="radio" id="site-filtering-allow-deny" name="site-filtering-mode" value="allow-deny" />
+                <label for="site-filtering-deny-allow">Whitelisting</label>
+                <input type="radio" id="site-filtering-deny-allow" name="site-filtering-mode" value="deny-allow" />
+            </div>
             <div id="site-whitelist" class="webpg-option-group">
                 <span class="webpg-options-text">Whitelist</span>
                 <input type="text" id="site-whitelist-input" class="ui-state-default ui-widget ui-state-default ui-corner-all" placeholder="http://www.example.com">

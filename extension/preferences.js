@@ -739,6 +739,13 @@ webpg.preferences = {
 			
 			return webpg.localStorage.setItem('site_exceptions', JSON.stringify(site_exceptions));
 		},
+        
+        mode: function(value) {
+            if (!value)
+                return webpg.localStorage.getItem('site_filtering_mode');
+                
+            return webpg.localStorage.setItem('site_filtering_mode', value);
+        }
     },
 
 };

@@ -119,15 +119,36 @@ webpg.overlay = {
                     }
                 };
                 // Check if inline formatting is enabled and setup
-                //  required parsers
+                // required parsers
                 webpg.utils.sendRequest({
                     'msg': "decorate_inline" },
                     function(response) {
                         webpg.overlay.decorate_inline = response.result.decorate_inline;
-                        if (webpg.overlay.decorate_inline === 'true') {
+                        if (webpg.overlay.decorate_inline === 'true')
+                        {
+                            var filtering_mode = response.result.filtering_mode;
+                            if (filtering_mode != "off")
+                            {
+                                var site_exceptions = response.result.site_exceptions;
+                                var this_uri = webpg.doc.location.href;
+                                //this_uri.normalize();
+                                
+                                if (filtering_mode == "deny-allow") {
+                                    // Must be in the whitelist to continue
+                                    if (!(site_exceptions.whitelist.indexOf(this_uri) > -1))
+                                        return;
+                                }
+                                else if (filtering_mode == "allow-deny") {
+                                    // Only stop if in blacklist
+                                    if (site_exceptions.blacklist.indexOf(this_uri) > -1)
+                                        return;
+                                }
+                            }
+                            
                             webpg.inline.mode = response.result.mode;
                             webpg.inline.render_toolbar = response.result.render_toolbar;
-                            if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
+                            if (webpg.utils.detectedBrowser.vendor === 'mozilla')
+                            {
                                 if (typeof(browserWindow)==='undefined')
                                     browserWindow = webpg.utils.mozilla.getChromeWindow();
                                 if (!webpg.plugin)
@@ -642,10 +663,10 @@ if (webpg.utils.detectedBrowser.vendor === 'mozilla') {
     } else {
         webpg.appcontent = document.getElementById("appcontent") || document;
         webpg.appcontent.addEventListener("DOMContentLoaded", webpg.overlay.init, false);
-        webpg.appcontent.addEventListener("scroll", webpg.overlay.executeInline, true);
+        //webpg.appcontent.addEventListener("scroll", webpg.overlay.executeInline, true);
     }
 } else {
     webpg.overlay.init();
-    window.addEventListener("scroll", webpg.overlay.executeInline, true);
+    //window.addEventListener("scroll", webpg.overlay.executeInline, true);
 }
 /* ]]> */

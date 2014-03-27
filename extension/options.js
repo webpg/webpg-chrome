@@ -562,6 +562,15 @@ webpg.options = {
                     '<option>' + webpg.preferences.site_exceptions.get().blacklist.join('</option><option>') + '</option>'
                 );
                 
+                webpg.jq("input[name=site-filtering-mode]")
+                    .filter('[value=' + webpg.preferences.site_exceptions.mode() + ']')
+                    .attr('checked', 'checked');
+                
+                webpg.jq("input[name=site-filtering-mode]").change(function() {
+                    var filter_mode = webpg.jq("input[name=site-filtering-mode]:checked").val();
+                    webpg.preferences.site_exceptions.mode(filter_mode);
+                });
+                
                 webpg.jq("#site-whitelist-add").click(function() {
                     var site_input = webpg.jq(this).siblings('input[type=text]');
                     if (site_input.val() != "") {

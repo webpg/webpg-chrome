@@ -187,6 +187,8 @@ webpg.background = {
                     webpg.preferences.decorate_inline.get(),
                     'mode': webpg.preferences.decorate_inline.mode(),
                     'render_toolbar': (webpg.preferences.render_toolbar.get() === "true"),
+                    'filtering_mode': webpg.preferences.site_exceptions.mode(),
+                    'site_exceptions': webpg.preferences.site_exceptions.get(),
                 };
                 break;
 

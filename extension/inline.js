@@ -248,7 +248,7 @@ webpg.inline = {
             }
             return true;
         });
-
+        
         if (!proceed)
             return false;
 
